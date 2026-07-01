@@ -63,6 +63,14 @@ class SupersededExtensions
             'reason' => self::REPLACED,
             'replacement' => 'flarum/realtime',
         ],
+        'kilowhat/flarum-ext-audit-pro' => [
+            'reason' => self::REPLACED,
+            'replacement' => 'flarum/audit',
+        ],
+        'kilowhat/flarum-ext-audit-free' => [
+            'reason' => self::REPLACED,
+            'replacement' => 'flarum/audit',
+        ],
     ];
 
     /**
