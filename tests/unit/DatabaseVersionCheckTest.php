@@ -33,9 +33,13 @@ class DatabaseVersionCheckTest extends TestCase
         $db = Mockery::mock(ConnectionInterface::class);
 
         return new class($db, $rawVersion) extends DatabaseVersionCheck {
-            public function __construct(ConnectionInterface $db, private ?string $raw)
+            /** @var string|null */
+            private $raw;
+
+            public function __construct(ConnectionInterface $db, ?string $raw)
             {
                 parent::__construct($db);
+                $this->raw = $raw;
             }
 
             protected function rawVersion(): ?string

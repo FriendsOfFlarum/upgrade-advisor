@@ -25,11 +25,29 @@ class Report
     /**
      * @param array<int, array{id: string, category: string, result: CheckResult}> $checks
      */
-    public function __construct(
-        public array $checks,
-        public string $overall,
-        public string $flarumMajor
-    ) {
+    /**
+     * @var array<int, array{id: string, category: string, result: CheckResult}>
+     */
+    public $checks;
+
+    /**
+     * @var string
+     */
+    public $overall;
+
+    /**
+     * @var string
+     */
+    public $flarumMajor;
+
+    /**
+     * @param array<int, array{id: string, category: string, result: CheckResult}> $checks
+     */
+    public function __construct(array $checks, string $overall, string $flarumMajor)
+    {
+        $this->checks = $checks;
+        $this->overall = $overall;
+        $this->flarumMajor = $flarumMajor;
     }
 
     public static function build(CheckRegistry $registry): self

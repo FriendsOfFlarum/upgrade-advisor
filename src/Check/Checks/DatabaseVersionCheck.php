@@ -18,9 +18,14 @@ use Illuminate\Database\ConnectionInterface;
 
 class DatabaseVersionCheck implements Check
 {
-    public function __construct(
-        protected ConnectionInterface $db
-    ) {
+    /**
+     * @var ConnectionInterface
+     */
+    protected $db;
+
+    public function __construct(ConnectionInterface $db)
+    {
+        $this->db = $db;
     }
 
     public function id(): string
@@ -99,7 +104,7 @@ class DatabaseVersionCheck implements Check
      */
     protected function normaliseVersion(string $raw, bool $isMariaDb): ?string
     {
-        if ($isMariaDb && str_starts_with($raw, '5.5.5-')) {
+        if ($isMariaDb && strncmp($raw, '5.5.5-', 6) === 0) {
             $raw = substr($raw, strlen('5.5.5-'));
         }
 

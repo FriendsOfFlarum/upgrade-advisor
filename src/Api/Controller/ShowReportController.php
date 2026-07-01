@@ -26,9 +26,14 @@ class ShowReportController extends AbstractShowController
      */
     public $serializer = ReportSerializer::class;
 
-    public function __construct(
-        protected CheckRegistry $registry
-    ) {
+    /**
+     * @var CheckRegistry
+     */
+    protected $registry;
+
+    public function __construct(CheckRegistry $registry)
+    {
+        $this->registry = $registry;
     }
 
     /**

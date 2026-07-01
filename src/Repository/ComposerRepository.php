@@ -42,11 +42,26 @@ class ComposerRepository
      */
     protected const MAX_DECODE_BYTES = 8388608; // 8 MB
 
-    public function __construct(
-        protected Client $client,
-        protected Cache $cache,
-        protected LoggerInterface $log
-    ) {
+    /**
+     * @var Client
+     */
+    protected $client;
+
+    /**
+     * @var Cache
+     */
+    protected $cache;
+
+    /**
+     * @var LoggerInterface
+     */
+    protected $log;
+
+    public function __construct(Client $client, Cache $cache, LoggerInterface $log)
+    {
+        $this->client = $client;
+        $this->cache = $cache;
+        $this->log = $log;
     }
 
     /**
@@ -115,7 +130,7 @@ class ComposerRepository
 
     protected function looksLikeJsonObject(string $head): bool
     {
-        return str_starts_with(ltrim($head), '{');
+        return strncmp(ltrim($head), '{', 1) === 0;
     }
 
     /**
@@ -414,7 +429,7 @@ class ComposerRepository
         // Root-relative (e.g. "/glowingblue/p2/%package%.json"): resolve against
         // the scheme + host of the repo, NOT its full path — otherwise the repo's
         // path segment gets duplicated.
-        if (str_starts_with($candidate, '/')) {
+        if (strncmp($candidate, '/', 1) === 0) {
             $scheme = parse_url($base, PHP_URL_SCHEME) ?: 'https';
             $host = parse_url($base, PHP_URL_HOST) ?: '';
             $port = parse_url($base, PHP_URL_PORT);
@@ -437,7 +452,7 @@ class ComposerRepository
 
     protected function isDev(string $version): bool
     {
-        return str_starts_with($version, 'dev-') || str_ends_with($version, '-dev');
+        return strncmp($version, 'dev-', 4) === 0 || substr($version, -4) === '-dev';
     }
 
     /**

@@ -33,13 +33,43 @@ class ExtensionCompatibilityCheck implements Check
      */
     protected const TARGET_CORE_VERSION = '2.0.0';
 
+    /**
+     * @var ExtensionManager
+     */
+    protected $extensions;
+
+    /**
+     * @var PackagistRepository
+     */
+    protected $packagist;
+
+    /**
+     * @var DiscussRepository
+     */
+    protected $discuss;
+
+    /**
+     * @var RepositoryConfig
+     */
+    protected $repositories;
+
+    /**
+     * @var ComposerRepository
+     */
+    protected $composer;
+
     public function __construct(
-        protected ExtensionManager $extensions,
-        protected PackagistRepository $packagist,
-        protected DiscussRepository $discuss,
-        protected RepositoryConfig $repositories,
-        protected ComposerRepository $composer
+        ExtensionManager $extensions,
+        PackagistRepository $packagist,
+        DiscussRepository $discuss,
+        RepositoryConfig $repositories,
+        ComposerRepository $composer
     ) {
+        $this->extensions = $extensions;
+        $this->packagist = $packagist;
+        $this->discuss = $discuss;
+        $this->repositories = $repositories;
+        $this->composer = $composer;
     }
 
     public function id(): string
@@ -302,11 +332,15 @@ class ExtensionCompatibilityCheck implements Check
 
         $compat = $this->packagist->compatibility($package, self::TARGET_CORE_VERSION);
 
-        return match ($compat['status']) {
-            'compatible'   => true,
-            'incompatible' => false,
-            default        => null,
-        };
+        if ($compat['status'] === 'compatible') {
+            return true;
+        }
+
+        if ($compat['status'] === 'incompatible') {
+            return false;
+        }
+
+        return null;
     }
 
     /**

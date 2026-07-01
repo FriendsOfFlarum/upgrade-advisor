@@ -37,11 +37,26 @@ class DiscussRepository
      */
     protected const CACHE_TTL = 21600; // 6 hours
 
-    public function __construct(
-        protected Client $client,
-        protected Cache $cache,
-        protected LoggerInterface $log
-    ) {
+    /**
+     * @var Client
+     */
+    protected $client;
+
+    /**
+     * @var Cache
+     */
+    protected $cache;
+
+    /**
+     * @var LoggerInterface
+     */
+    protected $log;
+
+    public function __construct(Client $client, Cache $cache, LoggerInterface $log)
+    {
+        $this->client = $client;
+        $this->cache = $cache;
+        $this->log = $log;
     }
 
     /**

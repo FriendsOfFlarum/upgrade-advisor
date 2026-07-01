@@ -21,9 +21,14 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 class TestRepositoryController implements RequestHandlerInterface
 {
-    public function __construct(
-        protected ComposerRepository $composer
-    ) {
+    /**
+     * @var ComposerRepository
+     */
+    protected $composer;
+
+    public function __construct(ComposerRepository $composer)
+    {
+        $this->composer = $composer;
     }
 
     public function handle(ServerRequestInterface $request): ResponseInterface
