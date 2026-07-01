@@ -32,7 +32,7 @@ class Checks implements ExtenderInterface
     /**
      * @var class-string<Check>[]
      */
-    private array $checks = [];
+    private $checks = [];
 
     /**
      * @param class-string<Check> $checkClass

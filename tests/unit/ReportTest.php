@@ -23,7 +23,9 @@ class ReportTest extends TestCase
      */
     protected function worst(array $statuses): string
     {
-        $checks = array_map(fn (string $status) => ['result' => new CheckResult($status)], $statuses);
+        $checks = array_map(function (string $status) {
+            return ['result' => new CheckResult($status)];
+        }, $statuses);
 
         $m = new ReflectionMethod(Report::class, 'worst');
         $m->setAccessible(true);
