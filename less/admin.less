@@ -1,0 +1,305 @@
+.UpgradeAdvisorPage {
+  &-menu {
+    background: var(--control-bg);
+    margin-bottom: 20px;
+
+    .Button {
+      padding: 12px 16px;
+      border-radius: 0;
+      background: transparent;
+
+      &.item-selected {
+        background: var(--body-bg);
+        font-weight: 600;
+      }
+    }
+  }
+
+  &-overall {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    margin-bottom: 24px;
+    border-radius: var(--border-radius);
+    border-left: 4px solid;
+
+    > .icon {
+      font-size: 32px;
+      flex-shrink: 0;
+    }
+
+    &-text {
+      h3 {
+        margin: 0 0 4px;
+      }
+
+      p {
+        margin: 0;
+        color: var(--muted-color);
+      }
+    }
+
+    &--pass {
+      background: fade(@alert-success-color, 12%);
+      border-color: @alert-success-color;
+
+      > .icon {
+        color: @alert-success-color;
+      }
+    }
+
+    &--warning {
+      background: fade(#f2c200, 15%);
+      border-color: #f2c200;
+
+      > .icon {
+        color: #c99700;
+      }
+    }
+
+    &--fail {
+      background: fade(@error-color, 12%);
+      border-color: @error-color;
+
+      > .icon {
+        color: @error-color;
+      }
+    }
+  }
+
+  &-category {
+    margin-bottom: 28px;
+
+    > h4 {
+      margin: 0 0 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--control-bg);
+      color: var(--muted-color);
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0.05em;
+    }
+  }
+
+  &-checks {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  &-check {
+    display: flex;
+    gap: 12px;
+    padding: 14px 0;
+
+    &:not(:last-child) {
+      border-bottom: 1px solid var(--control-bg);
+    }
+
+    &-status .icon {
+      font-size: 18px;
+      margin-top: 2px;
+    }
+
+    &--pass &-status .icon {
+      color: @alert-success-color;
+    }
+
+    &--warning &-status .icon {
+      color: #c99700;
+    }
+
+    &--fail &-status .icon {
+      color: @error-color;
+    }
+
+    &-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    &-title {
+      font-weight: 600;
+    }
+
+    &-description {
+      color: var(--muted-color);
+      font-size: 13px;
+      margin-top: 2px;
+    }
+  }
+
+  &-extensions {
+    width: 100%;
+    margin-top: 12px;
+    border-collapse: collapse;
+    font-size: 13px;
+
+    th,
+    td {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--control-bg);
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted-color);
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+  }
+
+  &-extension {
+    &-title {
+      display: block;
+      font-weight: 600;
+    }
+
+    &-name {
+      display: block;
+      color: var(--muted-color);
+      font-size: 11px;
+      font-family: monospace;
+    }
+
+    &-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    &--incompatible &-status,
+    &--abandoned &-status {
+      color: @error-color;
+    }
+
+    // A ready replacement is good news: show it in green even though the row's
+    // status is otherwise red. Scoped under --abandoned so it beats the red
+    // status colour above.
+    &--abandoned &-status &-replacementReady {
+      color: @alert-success-color;
+      font-weight: 600;
+    }
+
+    &--superseded &-status {
+      color: #c99700;
+      font-weight: 600;
+    }
+
+    &--self &-status {
+      color: var(--muted-color);
+      font-style: italic;
+    }
+
+    &--compatible &-status {
+      color: @alert-success-color;
+    }
+
+    &--unknown &-status {
+      color: var(--muted-color);
+    }
+
+    &-contact {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px 12px;
+      margin-top: 8px;
+      font-size: 12px;
+    }
+
+    &-contactLabel {
+      color: var(--muted-color);
+    }
+
+    &-contactLink {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+
+      .icon {
+        font-size: 11px;
+        opacity: 0.8;
+      }
+    }
+  }
+
+  &-actions {
+    margin-top: 24px;
+  }
+}
+
+.UpgradeAdvisorRepos {
+  &-intro {
+    color: var(--muted-color);
+  }
+
+  &-empty {
+    color: var(--muted-color);
+    font-style: italic;
+  }
+
+  &-row {
+    border: 1px solid var(--control-bg);
+    border-radius: var(--border-radius);
+    padding: 14px 16px;
+    margin-bottom: 12px;
+  }
+
+  &-rowHeader {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+
+    .Select {
+      flex: 0 0 auto;
+      min-width: 220px;
+    }
+
+    .Button--icon {
+      margin-left: auto;
+    }
+  }
+
+  &-fields {
+    display: grid;
+    gap: 10px;
+
+    .Form-group {
+      margin-bottom: 0;
+    }
+  }
+
+  &-test {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  &-testResult {
+    font-size: 13px;
+    font-weight: 600;
+
+    &--ok {
+      color: @alert-success-color;
+    }
+
+    &--fail {
+      color: @error-color;
+    }
+  }
+
+  &-add {
+    display: flex;
+    gap: 8px;
+    margin: 8px 0 20px;
+  }
+}
