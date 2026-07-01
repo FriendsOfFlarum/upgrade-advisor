@@ -3,7 +3,7 @@
 /*
  * This file is part of fof/upgrade-advisor.
  *
- * Copyright (c) 2026 IanM.
+ *  Copyright (c) 2026 FriendsOfFlarum.
  *
  * For the full copyright and license information, please view the LICENSE.md
  * file that was distributed with this source code.
@@ -51,13 +51,13 @@ class RepositoryConfig
     {
         $raw = $this->settings->get(self::SETTING);
 
-        if (!is_string($raw) || $raw === '') {
+        if (! is_string($raw) || $raw === '') {
             return [];
         }
 
         $decoded = json_decode($raw, true);
 
-        if (!is_array($decoded)) {
+        if (! is_array($decoded)) {
             return [];
         }
 
@@ -84,7 +84,7 @@ class RepositoryConfig
      */
     public static function normalise($entry): ?array
     {
-        if (!is_array($entry)) {
+        if (! is_array($entry)) {
             return null;
         }
 
@@ -97,10 +97,10 @@ class RepositoryConfig
             }
 
             return [
-                'type'     => self::TYPE_FLOXUM,
-                'url'      => self::FLOXUM_URL,
+                'type' => self::TYPE_FLOXUM,
+                'url' => self::FLOXUM_URL,
                 'username' => null,
-                'token'    => $token,
+                'token' => $token,
             ];
         }
 
@@ -117,10 +117,10 @@ class RepositoryConfig
             $username = isset($entry['username']) ? trim((string) $entry['username']) : null;
 
             return [
-                'type'     => self::TYPE_COMPOSER,
-                'url'      => $url,
+                'type' => self::TYPE_COMPOSER,
+                'url' => $url,
                 'username' => $username !== '' ? $username : null,
-                'token'    => $token !== '' ? $token : null,
+                'token' => $token !== '' ? $token : null,
             ];
         }
 

@@ -3,7 +3,7 @@
 /*
  * This file is part of fof/upgrade-advisor.
  *
- * Copyright (c) 2026 IanM.
+ *  Copyright (c) 2026 FriendsOfFlarum.
  *
  * For the full copyright and license information, please view the LICENSE.md
  * file that was distributed with this source code.
@@ -72,10 +72,10 @@ class PackagistRepository
 
         if ($versions === null) {
             return [
-                'status'             => 'unknown',
+                'status' => 'unknown',
                 'compatible_version' => null,
-                'latest_version'     => null,
-                'error'              => true,
+                'latest_version' => null,
+                'error' => true,
             ];
         }
 
@@ -85,7 +85,7 @@ class PackagistRepository
         foreach ($versions as $version) {
             $versionNumber = $version['version'] ?? null;
 
-            if (!is_string($versionNumber) || $this->isDev($versionNumber)) {
+            if (! is_string($versionNumber) || $this->isDev($versionNumber)) {
                 continue;
             }
 
@@ -104,10 +104,10 @@ class PackagistRepository
         }
 
         return [
-            'status'             => $compatible !== null ? 'compatible' : 'incompatible',
+            'status' => $compatible !== null ? 'compatible' : 'incompatible',
             'compatible_version' => $compatible,
-            'latest_version'     => $latest,
-            'error'              => false,
+            'latest_version' => $latest,
+            'error' => false,
         ];
     }
 
@@ -128,9 +128,9 @@ class PackagistRepository
 
         try {
             $response = $this->client->get(sprintf(self::P2_URL, $packageName), [
-                'timeout'         => 10,
+                'timeout' => 10,
                 'connect_timeout' => 5,
-                'headers'         => ['Accept' => 'application/json'],
+                'headers' => ['Accept' => 'application/json'],
             ]);
 
             $body = json_decode((string) $response->getBody(), true);

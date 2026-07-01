@@ -3,7 +3,7 @@
 /*
  * This file is part of fof/upgrade-advisor.
  *
- * Copyright (c) 2026 IanM.
+ *  Copyright (c) 2026 FriendsOfFlarum.
  *
  * For the full copyright and license information, please view the LICENSE.md
  * file that was distributed with this source code.
@@ -63,11 +63,11 @@ class DatabaseVersionCheckTest extends TestCase
     public static function mysqlVersions(): array
     {
         return [
-            'below JSON floor'        => ['5.6.51', CheckResult::FAIL],
-            'JSON floor exactly'      => ['5.7.8', CheckResult::WARNING],
-            'above floor, below rec'  => ['8.0.36', CheckResult::WARNING],
-            'recommended exactly'     => ['8.4.0', CheckResult::PASS],
-            'above recommended'       => ['9.1.0', CheckResult::PASS],
+            'below JSON floor' => ['5.6.51', CheckResult::FAIL],
+            'JSON floor exactly' => ['5.7.8', CheckResult::WARNING],
+            'above floor, below rec' => ['8.0.36', CheckResult::WARNING],
+            'recommended exactly' => ['8.4.0', CheckResult::PASS],
+            'above recommended' => ['9.1.0', CheckResult::PASS],
         ];
     }
 
@@ -86,10 +86,10 @@ class DatabaseVersionCheckTest extends TestCase
     public static function mariadbVersions(): array
     {
         return [
-            'below JSON floor'       => ['10.1.48-MariaDB', CheckResult::FAIL],
-            'JSON floor exactly'     => ['10.2.7-MariaDB', CheckResult::WARNING],
+            'below JSON floor' => ['10.1.48-MariaDB', CheckResult::FAIL],
+            'JSON floor exactly' => ['10.2.7-MariaDB', CheckResult::WARNING],
             'above floor, below rec' => ['10.11.6-MariaDB-1:10.11.6+maria~ubu', CheckResult::WARNING],
-            'recommended exactly'    => ['11.8.0-MariaDB', CheckResult::PASS],
+            'recommended exactly' => ['11.8.0-MariaDB', CheckResult::PASS],
         ];
     }
 

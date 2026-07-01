@@ -3,7 +3,7 @@
 /*
  * This file is part of fof/upgrade-advisor.
  *
- * Copyright (c) 2026 IanM.
+ *  Copyright (c) 2026 FriendsOfFlarum.
  *
  * For the full copyright and license information, please view the LICENSE.md
  * file that was distributed with this source code.
@@ -38,10 +38,10 @@ class TestRepositoryController implements RequestHandlerInterface
         $body = $request->getParsedBody() ?? [];
 
         $repo = RepositoryConfig::normalise([
-            'type'     => $body['type'] ?? null,
-            'url'      => $body['url'] ?? null,
+            'type' => $body['type'] ?? null,
+            'url' => $body['url'] ?? null,
             'username' => $body['username'] ?? null,
-            'token'    => $body['token'] ?? null,
+            'token' => $body['token'] ?? null,
         ]);
 
         if ($repo === null) {

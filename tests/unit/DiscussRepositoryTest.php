@@ -3,7 +3,7 @@
 /*
  * This file is part of fof/upgrade-advisor.
  *
- * Copyright (c) 2026 IanM.
+ *  Copyright (c) 2026 FriendsOfFlarum.
  *
  * For the full copyright and license information, please view the LICENSE.md
  * file that was distributed with this source code.
@@ -38,16 +38,16 @@ class DiscussRepositoryTest extends TestCase
     public static function urls(): array
     {
         return [
-            'bare id'                => ['https://discuss.flarum.org/d/39374', '39374'],
-            'slugged id'             => ['https://discuss.flarum.org/d/23219-progressive-web-app', '23219'],
-            'id with trailing path'  => ['https://discuss.flarum.org/d/39374/2', '39374'],
-            'http scheme'            => ['http://discuss.flarum.org/d/10395', '10395'],
+            'bare id' => ['https://discuss.flarum.org/d/39374', '39374'],
+            'slugged id' => ['https://discuss.flarum.org/d/23219-progressive-web-app', '23219'],
+            'id with trailing path' => ['https://discuss.flarum.org/d/39374/2', '39374'],
+            'http scheme' => ['http://discuss.flarum.org/d/10395', '10395'],
 
-            'non-discuss host'       => ['https://github.com/foo/bar', null],
+            'non-discuss host' => ['https://github.com/foo/bar', null],
             'discuss but not a thread' => ['https://discuss.flarum.org/u/ianm', null],
-            'empty string'           => ['', null],
-            'null'                   => [null, null],
-            'garbage'                => ['not a url', null],
+            'empty string' => ['', null],
+            'null' => [null, null],
+            'garbage' => ['not a url', null],
         ];
     }
 }

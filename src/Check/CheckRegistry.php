@@ -3,7 +3,7 @@
 /*
  * This file is part of fof/upgrade-advisor.
  *
- * Copyright (c) 2026 IanM.
+ *  Copyright (c) 2026 FriendsOfFlarum.
  *
  * For the full copyright and license information, please view the LICENSE.md
  * file that was distributed with this source code.
@@ -45,9 +45,9 @@ class CheckRegistry
             $check = $this->container->make($class);
 
             $results[] = [
-                'id'       => $check->id(),
+                'id' => $check->id(),
                 'category' => $check->category(),
-                'result'   => $check->run(),
+                'result' => $check->run(),
             ];
         }
 
