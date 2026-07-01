@@ -42,7 +42,7 @@ fof-upgrade-advisor:
         issues: Issues
         source: Source
       superseded_into_core: "Remove — now built into core"
-      superseded_replaced: "Remove — replaced by {replacement}"
+      superseded_replaced: "Remove before upgrading, then install {replacement} once the upgrade completes"
       superseded_self: "Remove this advisor as the final upgrade step"
       abandoned: "Abandoned — no maintained replacement"
       abandoned_replacement: "Abandoned — replaced by {replacement}"
