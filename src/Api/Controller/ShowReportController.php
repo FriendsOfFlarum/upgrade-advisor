@@ -3,7 +3,7 @@
 /*
  * This file is part of fof/upgrade-advisor.
  *
- * Copyright (c) 2026 IanM.
+ *  Copyright (c) 2026 FriendsOfFlarum.
  *
  * For the full copyright and license information, please view the LICENSE.md
  * file that was distributed with this source code.
@@ -26,9 +26,14 @@ class ShowReportController extends AbstractShowController
      */
     public $serializer = ReportSerializer::class;
 
-    public function __construct(
-        protected CheckRegistry $registry
-    ) {
+    /**
+     * @var CheckRegistry
+     */
+    protected $registry;
+
+    public function __construct(CheckRegistry $registry)
+    {
+        $this->registry = $registry;
     }
 
     /**

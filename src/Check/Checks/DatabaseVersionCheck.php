@@ -3,7 +3,7 @@
 /*
  * This file is part of fof/upgrade-advisor.
  *
- * Copyright (c) 2026 IanM.
+ *  Copyright (c) 2026 FriendsOfFlarum.
  *
  * For the full copyright and license information, please view the LICENSE.md
  * file that was distributed with this source code.
@@ -18,9 +18,14 @@ use Illuminate\Database\ConnectionInterface;
 
 class DatabaseVersionCheck implements Check
 {
-    public function __construct(
-        protected ConnectionInterface $db
-    ) {
+    /**
+     * @var ConnectionInterface
+     */
+    protected $db;
+
+    public function __construct(ConnectionInterface $db)
+    {
+        $this->db = $db;
     }
 
     public function id(): string
@@ -50,11 +55,11 @@ class DatabaseVersionCheck implements Check
         $current = "$server $version";
 
         $meta = [
-            'server'      => $server,
-            'version'     => $version,
-            'required'    => $required,
+            'server' => $server,
+            'version' => $version,
+            'required' => $required,
             'recommended' => $recommended,
-            'raw'         => $raw,
+            'raw' => $raw,
         ];
 
         if ($version === null) {
@@ -99,7 +104,7 @@ class DatabaseVersionCheck implements Check
      */
     protected function normaliseVersion(string $raw, bool $isMariaDb): ?string
     {
-        if ($isMariaDb && str_starts_with($raw, '5.5.5-')) {
+        if ($isMariaDb && strncmp($raw, '5.5.5-', 6) === 0) {
             $raw = substr($raw, strlen('5.5.5-'));
         }
 

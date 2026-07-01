@@ -3,7 +3,7 @@
 /*
  * This file is part of fof/upgrade-advisor.
  *
- * Copyright (c) 2026 IanM.
+ *  Copyright (c) 2026 FriendsOfFlarum.
  *
  * For the full copyright and license information, please view the LICENSE.md
  * file that was distributed with this source code.
@@ -23,7 +23,9 @@ class ReportTest extends TestCase
      */
     protected function worst(array $statuses): string
     {
-        $checks = array_map(fn (string $status) => ['result' => new CheckResult($status)], $statuses);
+        $checks = array_map(function (string $status) {
+            return ['result' => new CheckResult($status)];
+        }, $statuses);
 
         $m = new ReflectionMethod(Report::class, 'worst');
         $m->setAccessible(true);

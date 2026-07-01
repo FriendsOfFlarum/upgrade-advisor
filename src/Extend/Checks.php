@@ -3,7 +3,7 @@
 /*
  * This file is part of fof/upgrade-advisor.
  *
- * Copyright (c) 2026 IanM.
+ *  Copyright (c) 2026 FriendsOfFlarum.
  *
  * For the full copyright and license information, please view the LICENSE.md
  * file that was distributed with this source code.
@@ -32,7 +32,7 @@ class Checks implements ExtenderInterface
     /**
      * @var class-string<Check>[]
      */
-    private array $checks = [];
+    private $checks = [];
 
     /**
      * @param class-string<Check> $checkClass
@@ -44,7 +44,7 @@ class Checks implements ExtenderInterface
         return $this;
     }
 
-    public function extend(Container $container, Extension $extension = null): void
+    public function extend(Container $container, ?Extension $extension = null): void
     {
         $container->extend('fof-upgrade-advisor.checks', function (array $existing) {
             return array_merge($existing, $this->checks);

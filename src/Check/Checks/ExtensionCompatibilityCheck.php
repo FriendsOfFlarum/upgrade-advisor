@@ -3,7 +3,7 @@
 /*
  * This file is part of fof/upgrade-advisor.
  *
- * Copyright (c) 2026 IanM.
+ *  Copyright (c) 2026 FriendsOfFlarum.
  *
  * For the full copyright and license information, please view the LICENSE.md
  * file that was distributed with this source code.
@@ -33,13 +33,43 @@ class ExtensionCompatibilityCheck implements Check
      */
     protected const TARGET_CORE_VERSION = '2.0.0';
 
+    /**
+     * @var ExtensionManager
+     */
+    protected $extensions;
+
+    /**
+     * @var PackagistRepository
+     */
+    protected $packagist;
+
+    /**
+     * @var DiscussRepository
+     */
+    protected $discuss;
+
+    /**
+     * @var RepositoryConfig
+     */
+    protected $repositories;
+
+    /**
+     * @var ComposerRepository
+     */
+    protected $composer;
+
     public function __construct(
-        protected ExtensionManager $extensions,
-        protected PackagistRepository $packagist,
-        protected DiscussRepository $discuss,
-        protected RepositoryConfig $repositories,
-        protected ComposerRepository $composer
+        ExtensionManager $extensions,
+        PackagistRepository $packagist,
+        DiscussRepository $discuss,
+        RepositoryConfig $repositories,
+        ComposerRepository $composer
     ) {
+        $this->extensions = $extensions;
+        $this->packagist = $packagist;
+        $this->discuss = $discuss;
+        $this->repositories = $repositories;
+        $this->composer = $composer;
     }
 
     public function id(): string
@@ -61,7 +91,7 @@ class ExtensionCompatibilityCheck implements Check
         foreach ($this->installedExtensions() as $extension) {
             $packageName = $extension->composerJsonAttribute('name');
 
-            if (!is_string($packageName) || $packageName === '') {
+            if (! is_string($packageName) || $packageName === '') {
                 continue;
             }
 
@@ -78,10 +108,10 @@ class ExtensionCompatibilityCheck implements Check
 
         $meta = [
             'flarumMajor' => Targets::FLARUM_MAJOR,
-            'total'       => count($extensions),
-            'actionable'  => $actionable,
-            'unknown'     => $unknown,
-            'extensions'  => $extensions,
+            'total' => count($extensions),
+            'actionable' => $actionable,
+            'unknown' => $unknown,
+            'extensions' => $extensions,
         ];
 
         $current = "$actionable / ".count($extensions);
@@ -120,17 +150,17 @@ class ExtensionCompatibilityCheck implements Check
     protected function resolve(Extension $extension, string $packageName): array
     {
         $entry = [
-            'id'                    => $extension->getId(),
-            'name'                  => $packageName,
-            'title'                 => $extension->getTitle(),
-            'installedVersion'      => $extension->getVersion(),
-            'reason'                => null,
-            'replacement'           => null,
+            'id' => $extension->getId(),
+            'name' => $packageName,
+            'title' => $extension->getTitle(),
+            'installedVersion' => $extension->getVersion(),
+            'reason' => null,
+            'replacement' => null,
             'replacementCompatible' => null,
-            'compatibleVersion'     => null,
-            'latestVersion'         => null,
-            'source'                => null,
-            'contact'               => $this->contact($extension),
+            'compatibleVersion' => null,
+            'latestVersion' => null,
+            'source' => null,
+            'contact' => $this->contact($extension),
         ];
 
         // 1. Curated superseded list.
@@ -138,9 +168,9 @@ class ExtensionCompatibilityCheck implements Check
 
         if ($superseded !== null) {
             return array_merge($entry, [
-                'status'                => 'superseded',
-                'reason'                => $superseded['reason'],
-                'replacement'           => $superseded['replacement'],
+                'status' => 'superseded',
+                'reason' => $superseded['reason'],
+                'replacement' => $superseded['replacement'],
                 'replacementCompatible' => $this->replacementCompatible($superseded['replacement']),
             ]);
         }
@@ -158,10 +188,10 @@ class ExtensionCompatibilityCheck implements Check
                 : null;
 
             return array_merge($entry, [
-                'status'                => 'abandoned',
-                'replacement'           => $replacement,
+                'status' => 'abandoned',
+                'replacement' => $replacement,
                 'replacementCompatible' => $this->replacementCompatible($replacement),
-                'source'                => 'core',
+                'source' => 'core',
             ]);
         }
 
@@ -192,10 +222,10 @@ class ExtensionCompatibilityCheck implements Check
         // A published compatible release always wins.
         if ($compat['status'] === 'compatible') {
             return array_merge($entry, [
-                'status'            => 'compatible',
+                'status' => 'compatible',
                 'compatibleVersion' => $compat['compatible_version'],
-                'latestVersion'     => $compat['latest_version'],
-                'source'            => $source,
+                'latestVersion' => $compat['latest_version'],
+                'source' => $source,
             ]);
         }
 
@@ -211,9 +241,9 @@ class ExtensionCompatibilityCheck implements Check
         // Otherwise report the concrete incompatible result if we have one.
         if ($compat['status'] === 'incompatible') {
             return array_merge($entry, [
-                'status'        => 'incompatible',
+                'status' => 'incompatible',
                 'latestVersion' => $compat['latest_version'],
-                'source'        => $source,
+                'source' => $source,
             ]);
         }
 
@@ -254,7 +284,7 @@ class ExtensionCompatibilityCheck implements Check
 
         if (is_array($rawAuthors)) {
             foreach ($rawAuthors as $author) {
-                if (!is_array($author)) {
+                if (! is_array($author)) {
                     continue;
                 }
 
@@ -268,17 +298,17 @@ class ExtensionCompatibilityCheck implements Check
                 }
 
                 $authors[] = [
-                    'name'     => $name,
-                    'email'    => $email,
+                    'name' => $name,
+                    'email' => $email,
                     'homepage' => $homepage,
                 ];
             }
         }
 
         return [
-            'forum'   => $clean($extension->composerJsonAttribute('support.forum')),
-            'issues'  => $clean($extension->composerJsonAttribute('support.issues')),
-            'source'  => $clean($extension->composerJsonAttribute('support.source')),
+            'forum' => $clean($extension->composerJsonAttribute('support.forum')),
+            'issues' => $clean($extension->composerJsonAttribute('support.issues')),
+            'source' => $clean($extension->composerJsonAttribute('support.source')),
             'authors' => $authors,
         ];
     }
@@ -302,11 +332,15 @@ class ExtensionCompatibilityCheck implements Check
 
         $compat = $this->packagist->compatibility($package, self::TARGET_CORE_VERSION);
 
-        return match ($compat['status']) {
-            'compatible'   => true,
-            'incompatible' => false,
-            default        => null,
-        };
+        if ($compat['status'] === 'compatible') {
+            return true;
+        }
+
+        if ($compat['status'] === 'incompatible') {
+            return false;
+        }
+
+        return null;
     }
 
     /**

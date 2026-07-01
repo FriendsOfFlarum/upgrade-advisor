@@ -3,7 +3,7 @@
 /*
  * This file is part of fof/upgrade-advisor.
  *
- * Copyright (c) 2026 IanM.
+ *  Copyright (c) 2026 FriendsOfFlarum.
  *
  * For the full copyright and license information, please view the LICENSE.md
  * file that was distributed with this source code.
@@ -60,7 +60,7 @@ class SupersededExtensions
             'reason' => self::INTO_CORE,
         ],
         'blomstra/realtime' => [
-            'reason'      => self::REPLACED,
+            'reason' => self::REPLACED,
             'replacement' => 'flarum/realtime',
         ],
     ];
@@ -72,14 +72,14 @@ class SupersededExtensions
      */
     public static function lookup(string $packageName): ?array
     {
-        if (!isset(self::MAP[$packageName])) {
+        if (! isset(self::MAP[$packageName])) {
             return null;
         }
 
         $entry = self::MAP[$packageName];
 
         return [
-            'reason'      => $entry['reason'],
+            'reason' => $entry['reason'],
             'replacement' => $entry['replacement'] ?? null,
         ];
     }

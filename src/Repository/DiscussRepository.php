@@ -3,7 +3,7 @@
 /*
  * This file is part of fof/upgrade-advisor.
  *
- * Copyright (c) 2026 IanM.
+ *  Copyright (c) 2026 FriendsOfFlarum.
  *
  * For the full copyright and license information, please view the LICENSE.md
  * file that was distributed with this source code.
@@ -37,11 +37,26 @@ class DiscussRepository
      */
     protected const CACHE_TTL = 21600; // 6 hours
 
-    public function __construct(
-        protected Client $client,
-        protected Cache $cache,
-        protected LoggerInterface $log
-    ) {
+    /**
+     * @var Client
+     */
+    protected $client;
+
+    /**
+     * @var Cache
+     */
+    protected $cache;
+
+    /**
+     * @var LoggerInterface
+     */
+    protected $log;
+
+    public function __construct(Client $client, Cache $cache, LoggerInterface $log)
+    {
+        $this->client = $client;
+        $this->cache = $cache;
+        $this->log = $log;
     }
 
     /**
@@ -66,8 +81,8 @@ class DiscussRepository
 
         return [
             'abandoned' => in_array(self::TAG_ABANDONED, $slugs, true),
-            'has1x'     => in_array(self::TAG_1X, $slugs, true),
-            'has2x'     => in_array(self::TAG_2X, $slugs, true),
+            'has1x' => in_array(self::TAG_1X, $slugs, true),
+            'has2x' => in_array(self::TAG_2X, $slugs, true),
         ];
     }
 
@@ -79,7 +94,7 @@ class DiscussRepository
      */
     protected function discussionId(?string $url): ?string
     {
-        if (!is_string($url) || $url === '') {
+        if (! is_string($url) || $url === '') {
             return null;
         }
 
@@ -116,9 +131,9 @@ class DiscussRepository
 
         try {
             $response = $this->client->get(sprintf(self::API_URL, $id), [
-                'timeout'         => 10,
+                'timeout' => 10,
                 'connect_timeout' => 5,
-                'headers'         => ['Accept' => 'application/json'],
+                'headers' => ['Accept' => 'application/json'],
             ]);
 
             $body = json_decode((string) $response->getBody(), true);

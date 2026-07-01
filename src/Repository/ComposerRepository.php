@@ -3,7 +3,7 @@
 /*
  * This file is part of fof/upgrade-advisor.
  *
- * Copyright (c) 2026 IanM.
+ *  Copyright (c) 2026 FriendsOfFlarum.
  *
  * For the full copyright and license information, please view the LICENSE.md
  * file that was distributed with this source code.
@@ -42,11 +42,26 @@ class ComposerRepository
      */
     protected const MAX_DECODE_BYTES = 8388608; // 8 MB
 
-    public function __construct(
-        protected Client $client,
-        protected Cache $cache,
-        protected LoggerInterface $log
-    ) {
+    /**
+     * @var Client
+     */
+    protected $client;
+
+    /**
+     * @var Cache
+     */
+    protected $cache;
+
+    /**
+     * @var LoggerInterface
+     */
+    protected $log;
+
+    public function __construct(Client $client, Cache $cache, LoggerInterface $log)
+    {
+        $this->client = $client;
+        $this->cache = $cache;
+        $this->log = $log;
     }
 
     /**
@@ -64,11 +79,11 @@ class ComposerRepository
 
         try {
             $response = $this->client->get($url, [
-                'timeout'         => 15,
+                'timeout' => 15,
                 'connect_timeout' => 5,
-                'http_errors'     => false,
-                'stream'          => true,
-                'headers'         => $this->authHeaders($repo) + ['Accept' => 'application/json'],
+                'http_errors' => false,
+                'stream' => true,
+                'headers' => $this->authHeaders($repo) + ['Accept' => 'application/json'],
             ]);
         } catch (\Throwable $e) {
             return ['ok' => false, 'reason' => 'unreachable'];
@@ -95,13 +110,13 @@ class ComposerRepository
         $stream = $response->getBody();
         $head = '';
 
-        while (!$stream->eof() && strlen($head) < $cap) {
+        while (! $stream->eof() && strlen($head) < $cap) {
             $head .= $stream->read(8192);
         }
 
         $stream->close();
 
-        if (!$this->looksLikeJsonObject($head)) {
+        if (! $this->looksLikeJsonObject($head)) {
             return ['ok' => false, 'reason' => 'invalid'];
         }
 
@@ -115,7 +130,7 @@ class ComposerRepository
 
     protected function looksLikeJsonObject(string $head): bool
     {
-        return str_starts_with(ltrim($head), '{');
+        return strncmp(ltrim($head), '{', 1) === 0;
     }
 
     /**
@@ -140,7 +155,7 @@ class ComposerRepository
         foreach ($versions as $version) {
             $versionNumber = $version['version'] ?? null;
 
-            if (!is_string($versionNumber) || $this->isDev($versionNumber)) {
+            if (! is_string($versionNumber) || $this->isDev($versionNumber)) {
                 continue;
             }
 
@@ -282,7 +297,7 @@ class ComposerRepository
         $previous = [];
 
         foreach ($versions as $delta) {
-            if (!is_array($delta)) {
+            if (! is_array($delta)) {
                 continue;
             }
 
@@ -336,7 +351,7 @@ class ComposerRepository
 
         $body = json_decode($raw, true);
 
-        if (!is_array($body)) {
+        if (! is_array($body)) {
             return null;
         }
 
@@ -355,10 +370,10 @@ class ComposerRepository
     {
         try {
             $response = $this->client->get($url, [
-                'timeout'         => 15,
+                'timeout' => 15,
                 'connect_timeout' => 5,
-                'stream'          => true,
-                'headers'         => $this->authHeaders($repo) + ['Accept' => 'application/json'],
+                'stream' => true,
+                'headers' => $this->authHeaders($repo) + ['Accept' => 'application/json'],
             ]);
 
             if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 300) {
@@ -368,7 +383,7 @@ class ComposerRepository
             $stream = $response->getBody();
             $buffer = '';
 
-            while (!$stream->eof() && strlen($buffer) < $maxBytes) {
+            while (! $stream->eof() && strlen($buffer) < $maxBytes) {
                 $buffer .= $stream->read(8192);
             }
 
@@ -414,7 +429,7 @@ class ComposerRepository
         // Root-relative (e.g. "/glowingblue/p2/%package%.json"): resolve against
         // the scheme + host of the repo, NOT its full path — otherwise the repo's
         // path segment gets duplicated.
-        if (str_starts_with($candidate, '/')) {
+        if (strncmp($candidate, '/', 1) === 0) {
             $scheme = parse_url($base, PHP_URL_SCHEME) ?: 'https';
             $host = parse_url($base, PHP_URL_HOST) ?: '';
             $port = parse_url($base, PHP_URL_PORT);
@@ -437,7 +452,7 @@ class ComposerRepository
 
     protected function isDev(string $version): bool
     {
-        return str_starts_with($version, 'dev-') || str_ends_with($version, '-dev');
+        return strncmp($version, 'dev-', 4) === 0 || substr($version, -4) === '-dev';
     }
 
     /**
@@ -446,9 +461,9 @@ class ComposerRepository
     protected function result(string $status, ?string $compatible = null, ?string $latest = null): array
     {
         return [
-            'status'             => $status,
+            'status' => $status,
             'compatible_version' => $compatible,
-            'latest_version'     => $latest,
+            'latest_version' => $latest,
         ];
     }
 }

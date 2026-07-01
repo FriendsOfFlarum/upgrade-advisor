@@ -3,7 +3,7 @@
 /*
  * This file is part of fof/upgrade-advisor.
  *
- * Copyright (c) 2026 IanM.
+ *  Copyright (c) 2026 FriendsOfFlarum.
  *
  * For the full copyright and license information, please view the LICENSE.md
  * file that was distributed with this source code.
@@ -25,11 +25,29 @@ class Report
     /**
      * @param array<int, array{id: string, category: string, result: CheckResult}> $checks
      */
-    public function __construct(
-        public array $checks,
-        public string $overall,
-        public string $flarumMajor
-    ) {
+    /**
+     * @var array<int, array{id: string, category: string, result: CheckResult}>
+     */
+    public $checks;
+
+    /**
+     * @var string
+     */
+    public $overall;
+
+    /**
+     * @var string
+     */
+    public $flarumMajor;
+
+    /**
+     * @param array<int, array{id: string, category: string, result: CheckResult}> $checks
+     */
+    public function __construct(array $checks, string $overall, string $flarumMajor)
+    {
+        $this->checks = $checks;
+        $this->overall = $overall;
+        $this->flarumMajor = $flarumMajor;
     }
 
     public static function build(CheckRegistry $registry): self
