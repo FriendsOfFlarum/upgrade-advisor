@@ -1,5 +1,6 @@
 import app from 'flarum/admin/app';
 import Component, { ComponentAttrs } from 'flarum/common/Component';
+import Link from 'flarum/common/components/Link';
 import LinkButton from 'flarum/common/components/LinkButton';
 import icon from 'flarum/common/helpers/icon';
 import type Mithril from 'mithril';
@@ -86,7 +87,14 @@ export default class ExtensionCompatibilityList extends Component<Attrs> {
     return (
       <tr className={`UpgradeAdvisorPage-extension UpgradeAdvisorPage-extension--${variant}`}>
         <td>
-          <span className="UpgradeAdvisorPage-extension-title">{ext.title}</span>
+          {ext.reason === 'self' ? (
+            <span className="UpgradeAdvisorPage-extension-title">{ext.title}</span>
+          ) : (
+            // Most actions (disable, uninstall, check settings) start from the extension's own admin page.
+            <Link className="UpgradeAdvisorPage-extension-title" href={app.route('extension', { id: ext.id })}>
+              {ext.title}
+            </Link>
+          )}
           <span className="UpgradeAdvisorPage-extension-name">{ext.name}</span>
         </td>
         <td>{ext.installedVersion || '—'}</td>
