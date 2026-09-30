@@ -157,6 +157,17 @@
     &-title {
       display: block;
       font-weight: 600;
+      color: var(--text-color);
+
+      a& {
+        text-decoration: none;
+
+        &:hover,
+        &:focus {
+          color: var(--link-color);
+          text-decoration: underline;
+        }
+      }
     }
 
     &-name {
