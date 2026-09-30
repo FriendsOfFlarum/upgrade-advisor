@@ -1,40 +1,35 @@
 import Component, { ComponentAttrs } from 'flarum/common/Component';
 import type Mithril from 'mithril';
-type ExtStatus = 'compatible' | 'incompatible' | 'unknown' | 'superseded' | 'abandoned';
-interface ContactAuthor {
-    name: string | null;
-    email: string | null;
-    homepage: string | null;
-}
-interface Contact {
-    forum: string | null;
-    issues: string | null;
-    source: string | null;
-    authors: ContactAuthor[];
-}
-interface ExtensionCompat {
-    id: string;
-    name: string;
-    title: string;
-    installedVersion: string | null;
-    status: ExtStatus;
-    reason: 'into_core' | 'replaced' | 'self' | null;
-    replacement: string | null;
-    replacementCompatible: boolean | null;
-    compatibleVersion: string | null;
-    latestVersion: string | null;
-    source: 'packagist' | 'discuss' | 'core' | null;
-    contact: Contact;
-}
+import type { CheckData, ExtensionCompat } from '../models/Report';
+type GroupKey = 'environment' | 'decision' | 'unknown' | 'replace' | 'ready';
 interface Attrs extends ComponentAttrs {
     extensions: ExtensionCompat[];
+    checks: CheckData[];
 }
+/**
+ * Every extension in one table, grouped by what the admin needs to do. Each
+ * group explains itself once in its header; rows carry only what's specific
+ * to that extension.
+ */
 export default class ExtensionCompatibilityList extends Component<Attrs> {
-    view(vnode: Mithril.Vnode<Attrs, this>): JSX.Element | null;
+    collapsed: Record<GroupKey, boolean>;
+    copied: string | null;
+    view(): JSX.Element;
+    group(key: GroupKey, iconName: string, count: number, rows: Mithril.Children[], footer?: Mithril.Children): JSX.Element;
     row(ext: ExtensionCompat): JSX.Element;
-    contactLinks(ext: ExtensionCompat): Mithril.Children;
-    contactLink(iconName: string, label: Mithril.Children, href: string): Mithril.Children;
-    statusLabel(ext: ExtensionCompat): Mithril.Children;
-    abandonedLabel(ext: ExtensionCompat): Mithril.Children;
+    checkRow(check: CheckData): JSX.Element;
+    /**
+     * The one thing that's specific to this row; the group header covers the rest.
+     * The full hint is in the tooltip.
+     */
+    detail(ext: ExtensionCompat): Mithril.Children;
+    /**
+     * One command for everything to remove before upgrading, and one for the
+     * replacements to install afterwards.
+     */
+    commands(items: ExtensionCompat[]): Mithril.Children;
+    command(step: 'before' | 'after', text: string): JSX.Element;
+    copy(text: string): void;
+    sorted(extensions: ExtensionCompat[]): ExtensionCompat[];
 }
 export {};
