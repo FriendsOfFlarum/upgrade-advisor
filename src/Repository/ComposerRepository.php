@@ -13,6 +13,7 @@ namespace FoF\UpgradeAdvisor\Repository;
 
 use Composer\Semver\Semver;
 use GuzzleHttp\Client;
+use FoF\UpgradeAdvisor\CacheGeneration;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Psr\Log\LoggerInterface;
 
@@ -32,7 +33,7 @@ class ComposerRepository
     /**
      * How long to cache repository metadata, in seconds.
      */
-    protected const CACHE_TTL = 21600; // 6 hours
+    protected const CACHE_TTL = CacheGeneration::TTL;
 
     /**
      * Maximum size of a metadata document we're willing to decode into memory.
@@ -53,12 +54,18 @@ class ComposerRepository
     protected $cache;
 
     /**
+     * @var CacheGeneration
+     */
+    protected $generation;
+
+    /**
      * @var LoggerInterface
      */
     protected $log;
 
-    public function __construct(Client $client, Cache $cache, LoggerInterface $log)
+    public function __construct(Client $client, Cache $cache, LoggerInterface $log, CacheGeneration $generation)
     {
+        $this->generation = $generation;
         $this->client = $client;
         $this->cache = $cache;
         $this->log = $log;
@@ -231,7 +238,7 @@ class ComposerRepository
      */
     protected function rootMetadataUrl(array $repo): string
     {
-        $cacheKey = 'fof-upgrade-advisor.composer.metaurl.'.md5($repo['url']);
+        $cacheKey = $this->generation->key('composer.metaurl.'.md5($repo['url']));
 
         $cached = $this->cache->get($cacheKey);
 
@@ -329,7 +336,7 @@ class ComposerRepository
      */
     protected function fetchJsonCapped(array $repo, string $url, string $cacheKeySuffix): ?array
     {
-        $cacheKey = 'fof-upgrade-advisor.composer.'.$cacheKeySuffix;
+        $cacheKey = $this->generation->key('composer.'.$cacheKeySuffix);
 
         $cached = $this->cache->get($cacheKey);
 

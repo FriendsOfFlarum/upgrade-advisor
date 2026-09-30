@@ -12,6 +12,7 @@
 namespace FoF\UpgradeAdvisor\Repository;
 
 use GuzzleHttp\Client;
+use FoF\UpgradeAdvisor\CacheGeneration;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Psr\Log\LoggerInterface;
 
@@ -35,7 +36,7 @@ class DiscussRepository
     /**
      * How long to cache a discussion's tags, in seconds.
      */
-    protected const CACHE_TTL = 21600; // 6 hours
+    protected const CACHE_TTL = CacheGeneration::TTL;
 
     /**
      * @var Client
@@ -48,15 +49,63 @@ class DiscussRepository
     protected $cache;
 
     /**
+     * @var CacheGeneration
+     */
+    protected $generation;
+
+    /**
+     * Tag slugs fetched during this request, by discussion id; null marks a
+     * failure, so it isn't retried one at a time after a prefetch.
+     *
+     * @var array<string, string[]|null>
+     */
+    protected $fetched = [];
+
+    /**
      * @var LoggerInterface
      */
     protected $log;
 
-    public function __construct(Client $client, Cache $cache, LoggerInterface $log)
+    public function __construct(Client $client, Cache $cache, LoggerInterface $log, CacheGeneration $generation)
     {
+        $this->generation = $generation;
         $this->client = $client;
         $this->cache = $cache;
         $this->log = $log;
+    }
+
+    /**
+     * Fetch the tags of every uncached discussion concurrently, so the lookups
+     * that follow are answered from memory. URLs that aren't discuss threads
+     * are ignored.
+     *
+     * @param array<int, string|null> $supportForumUrls
+     */
+    public function prefetch(array $supportForumUrls): void
+    {
+        $urls = [];
+
+        foreach ($supportForumUrls as $url) {
+            $id = $this->discussionId($url);
+
+            if ($id === null || array_key_exists($id, $this->fetched) || isset($urls[$id])) {
+                continue;
+            }
+
+            $cached = $this->cache->get($this->cacheKey($id));
+
+            if (is_array($cached)) {
+                $this->fetched[$id] = $cached;
+                continue;
+            }
+
+            $urls[$id] = sprintf(self::API_URL, $id);
+        }
+
+        foreach (ConcurrentFetch::bodies($this->client, $urls, $this->requestOptions()) as $id => $body) {
+            $id = (string) $id; // numeric array keys come back as ints
+            $this->fetched[$id] = $body instanceof \Throwable ? $this->failed($id, $body) : $this->store($id, $body);
+        }
     }
 
     /**
@@ -121,39 +170,70 @@ class DiscussRepository
      */
     protected function fetchTagSlugs(string $id): ?array
     {
-        $cacheKey = 'fof-upgrade-advisor.discuss.'.$id;
+        if (array_key_exists($id, $this->fetched)) {
+            return $this->fetched[$id];
+        }
 
-        $cached = $this->cache->get($cacheKey);
+        $cached = $this->cache->get($this->cacheKey($id));
 
         if (is_array($cached)) {
-            return $cached;
+            return $this->fetched[$id] = $cached;
         }
 
         try {
-            $response = $this->client->get(sprintf(self::API_URL, $id), [
-                'timeout' => 10,
-                'connect_timeout' => 5,
-                'headers' => ['Accept' => 'application/json'],
-            ]);
-
-            $body = json_decode((string) $response->getBody(), true);
-
-            $slugs = [];
-
-            foreach ($body['included'] ?? [] as $included) {
-                if (($included['type'] ?? null) === 'tags' && isset($included['attributes']['slug'])) {
-                    $slugs[] = (string) $included['attributes']['slug'];
-                }
-            }
+            $response = $this->client->get(sprintf(self::API_URL, $id), $this->requestOptions());
         } catch (\Throwable $e) {
-            $this->log->info('[fof/upgrade-advisor] Failed to fetch discuss tags for discussion '.$id.': '.$e->getMessage());
-
-            // Don't cache failures — retry on the next run.
-            return null;
+            return $this->fetched[$id] = $this->failed($id, $e);
         }
 
-        $this->cache->put($cacheKey, $slugs, self::CACHE_TTL);
+        return $this->fetched[$id] = $this->store($id, (string) $response->getBody());
+    }
+
+    /**
+     * @return string[]
+     */
+    protected function store(string $id, string $body): array
+    {
+        $decoded = json_decode($body, true);
+        $slugs = [];
+
+        foreach ($decoded['included'] ?? [] as $included) {
+            if (($included['type'] ?? null) === 'tags' && isset($included['attributes']['slug'])) {
+                $slugs[] = (string) $included['attributes']['slug'];
+            }
+        }
+
+        $this->cache->put($this->cacheKey($id), $slugs, self::CACHE_TTL);
 
         return $slugs;
+    }
+
+    /**
+     * Log a failed fetch. Failures aren't cached, so the next run retries.
+     *
+     * @return null
+     */
+    protected function failed(string $id, \Throwable $e)
+    {
+        $this->log->info('[fof/upgrade-advisor] Failed to fetch discuss tags for discussion '.$id.': '.$e->getMessage());
+
+        return null;
+    }
+
+    protected function cacheKey(string $id): string
+    {
+        return $this->generation->key('discuss.'.$id);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function requestOptions(): array
+    {
+        return [
+            'timeout' => 10,
+            'connect_timeout' => 5,
+            'headers' => ['Accept' => 'application/json'],
+        ];
     }
 }

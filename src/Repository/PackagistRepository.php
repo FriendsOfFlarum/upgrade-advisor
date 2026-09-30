@@ -13,6 +13,7 @@ namespace FoF\UpgradeAdvisor\Repository;
 
 use Composer\Semver\Semver;
 use GuzzleHttp\Client;
+use FoF\UpgradeAdvisor\CacheGeneration;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Psr\Log\LoggerInterface;
 
@@ -31,7 +32,7 @@ class PackagistRepository
     /**
      * How long to cache a package's Packagist metadata, in seconds.
      */
-    protected const CACHE_TTL = 21600; // 6 hours
+    protected const CACHE_TTL = CacheGeneration::TTL;
 
     /**
      * @var Client
@@ -44,15 +45,59 @@ class PackagistRepository
     protected $cache;
 
     /**
+     * @var CacheGeneration
+     */
+    protected $generation;
+
+    /**
      * @var LoggerInterface
      */
     protected $log;
 
-    public function __construct(Client $client, Cache $cache, LoggerInterface $log)
+    /**
+     * Versions fetched during this request, by package; null marks a failure,
+     * so it isn't retried one at a time after a prefetch.
+     *
+     * @var array<string, array<int, array<string, mixed>>|null>
+     */
+    protected $fetched = [];
+
+    public function __construct(Client $client, Cache $cache, LoggerInterface $log, CacheGeneration $generation)
     {
+        $this->generation = $generation;
         $this->client = $client;
         $this->cache = $cache;
         $this->log = $log;
+    }
+
+    /**
+     * Fetch every uncached package concurrently, so the lookups that follow
+     * are answered from memory.
+     *
+     * @param string[] $packageNames
+     */
+    public function prefetch(array $packageNames): void
+    {
+        $urls = [];
+
+        foreach (array_unique($packageNames) as $name) {
+            if (array_key_exists($name, $this->fetched)) {
+                continue;
+            }
+
+            $cached = $this->cache->get($this->cacheKey($name));
+
+            if (is_array($cached)) {
+                $this->fetched[$name] = $cached;
+                continue;
+            }
+
+            $urls[$name] = sprintf(self::P2_URL, $name);
+        }
+
+        foreach (ConcurrentFetch::bodies($this->client, $urls, $this->requestOptions()) as $name => $body) {
+            $this->fetched[$name] = $body instanceof \Throwable ? $this->failed($name, $body) : $this->store($name, $body);
+        }
     }
 
     /**
@@ -118,34 +163,65 @@ class PackagistRepository
      */
     protected function fetchVersions(string $packageName): ?array
     {
-        $cacheKey = 'fof-upgrade-advisor.packagist.'.$packageName;
+        if (array_key_exists($packageName, $this->fetched)) {
+            return $this->fetched[$packageName];
+        }
 
-        $cached = $this->cache->get($cacheKey);
+        $cached = $this->cache->get($this->cacheKey($packageName));
 
         if (is_array($cached)) {
-            return $cached;
+            return $this->fetched[$packageName] = $cached;
         }
 
         try {
-            $response = $this->client->get(sprintf(self::P2_URL, $packageName), [
-                'timeout' => 10,
-                'connect_timeout' => 5,
-                'headers' => ['Accept' => 'application/json'],
-            ]);
-
-            $body = json_decode((string) $response->getBody(), true);
-
-            $versions = $body['packages'][$packageName] ?? [];
+            $response = $this->client->get(sprintf(self::P2_URL, $packageName), $this->requestOptions());
         } catch (\Throwable $e) {
-            $this->log->info('[fof/upgrade-advisor] Failed to fetch Packagist metadata for '.$packageName.': '.$e->getMessage());
-
-            // Don't cache failures — retry on the next run.
-            return null;
+            return $this->fetched[$packageName] = $this->failed($packageName, $e);
         }
 
-        $this->cache->put($cacheKey, $versions, self::CACHE_TTL);
+        return $this->fetched[$packageName] = $this->store($packageName, (string) $response->getBody());
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    protected function store(string $packageName, string $body): array
+    {
+        $decoded = json_decode($body, true);
+        $versions = $decoded['packages'][$packageName] ?? [];
+
+        $this->cache->put($this->cacheKey($packageName), $versions, self::CACHE_TTL);
 
         return $versions;
+    }
+
+    /**
+     * Log a failed fetch. Failures aren't cached, so the next run retries.
+     *
+     * @return null
+     */
+    protected function failed(string $packageName, \Throwable $e)
+    {
+        $this->log->info('[fof/upgrade-advisor] Failed to fetch Packagist metadata for '.$packageName.': '.$e->getMessage());
+
+        return null;
+    }
+
+    protected function cacheKey(string $packageName): string
+    {
+        return $this->generation->key('packagist.'.$packageName);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function requestOptions(): array
+    {
+        return [
+            'timeout' => 10,
+            'connect_timeout' => 5,
+            'headers' => ['Accept' => 'application/json'],
+        ];
     }
 
     protected function constraintAllows(string $constraint, string $coreVersion): bool

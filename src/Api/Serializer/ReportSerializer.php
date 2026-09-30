@@ -11,6 +11,7 @@
 
 namespace FoF\UpgradeAdvisor\Api\Serializer;
 
+use Carbon\Carbon;
 use Flarum\Api\Serializer\AbstractSerializer;
 use FoF\UpgradeAdvisor\Report;
 use InvalidArgumentException;
@@ -40,6 +41,8 @@ class ReportSerializer extends AbstractSerializer
         return [
             'overall' => $report->overall,
             'flarumMajor' => $report->flarumMajor,
+            'checkedAt' => $this->formatDate(Carbon::createFromTimestamp($report->checkedAt)),
+            'dataAsOf' => $this->formatDate(Carbon::createFromTimestamp($report->dataAsOf)),
             'checks' => array_map(function (array $check) {
                 return [
                     'id' => $check['id'],

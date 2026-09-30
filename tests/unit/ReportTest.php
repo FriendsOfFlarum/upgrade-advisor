@@ -11,8 +11,13 @@
 
 namespace FoF\UpgradeAdvisor\Tests\unit;
 
+use FoF\UpgradeAdvisor\CacheGeneration;
+use FoF\UpgradeAdvisor\Check\CheckRegistry;
 use FoF\UpgradeAdvisor\Check\CheckResult;
 use FoF\UpgradeAdvisor\Report;
+use Illuminate\Cache\ArrayStore;
+use Illuminate\Cache\Repository;
+use Mockery;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
@@ -61,5 +66,22 @@ class ReportTest extends TestCase
     public function fail_outranks_warning()
     {
         $this->assertSame(CheckResult::FAIL, $this->worst([CheckResult::WARNING, CheckResult::FAIL, CheckResult::WARNING]));
+    }
+
+    /** @test */
+    public function records_when_it_was_checked_and_how_old_the_remote_data_can_be()
+    {
+        $registry = Mockery::mock(CheckRegistry::class);
+        $registry->shouldReceive('run')->andReturn([]);
+
+        $generation = new CacheGeneration(new Repository(new ArrayStore()));
+        $generation->refresh(5000);
+
+        $report = Report::build($registry, $generation, 5030);
+
+        $this->assertSame(5030, $report->checkedAt);
+        $this->assertSame(5000, $report->dataAsOf);
+
+        Mockery::close();
     }
 }

@@ -15,6 +15,7 @@ use Flarum\Foundation\AbstractServiceProvider;
 use FoF\UpgradeAdvisor\Check\Checks\DatabaseVersionCheck;
 use FoF\UpgradeAdvisor\Check\Checks\ExtensionCompatibilityCheck;
 use FoF\UpgradeAdvisor\Check\Checks\PhpVersionCheck;
+use FoF\UpgradeAdvisor\SupersededExtensions;
 use GuzzleHttp\Client;
 
 class UpgradeAdvisorServiceProvider extends AbstractServiceProvider
@@ -29,6 +30,16 @@ class UpgradeAdvisorServiceProvider extends AbstractServiceProvider
                 DatabaseVersionCheck::class,
                 ExtensionCompatibilityCheck::class,
             ];
+        });
+
+        // Extender-supplied superseded mappings. The Superseded extender appends
+        // to this, and SupersededExtensions merges them over its curated map.
+        $this->container->singleton('fof-upgrade-advisor.superseded', function () {
+            return [];
+        });
+
+        $this->container->singleton(SupersededExtensions::class, function ($container) {
+            return new SupersededExtensions($container->make('fof-upgrade-advisor.superseded'));
         });
 
         // Guzzle client used for external lookups (Packagist, discuss.flarum.org).
@@ -53,6 +64,11 @@ class UpgradeAdvisorServiceProvider extends AbstractServiceProvider
 
         $this->container
             ->when(Repository\ComposerRepository::class)
+            ->needs(Client::class)
+            ->give($clientFactory);
+
+        $this->container
+            ->when(AbandonedExtensions::class)
             ->needs(Client::class)
             ->give($clientFactory);
     }

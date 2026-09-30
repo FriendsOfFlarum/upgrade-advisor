@@ -16,7 +16,7 @@ Adds an admin page that runs a series of readiness checks for **Flarum 2.0** and
   - **Compatible** — a published release supports `flarum/core ^2.0` (pre-releases count).
   - **Incompatible** — no compatible release yet.
   - **Abandoned** — flagged by Flarum core or its support thread; if a replacement is suggested, its own 2.0 readiness is checked and shown.
-  - **Superseded** — functionality is now built into core, or the extension has moved to a different package (curated list).
+  - **Superseded** — functionality is now built into core, or the extension has moved to a different package (curated list, [extendable](#adding-your-own-superseded-extensions)).
   - **Could not check** — a premium or private-repository extension that isn't on public Packagist (see below).
 
 Compatibility is determined from **Packagist** and cross-referenced against the extension's official support discussion tags on discuss.flarum.org. For extensions the advisor can't resolve, it surfaces the support thread and author contact links so you can ask the author about their 2.0 plans.
@@ -44,6 +44,35 @@ return [
 ```
 
 Each registered class must implement `FoF\UpgradeAdvisor\Check\Check` and is resolved from the container, so it may type-hint any services it needs.
+
+## Adding your own superseded extensions
+
+The **Superseded** status uses a curated list of extensions that should be removed before upgrading, either because their functionality moved into core or because they were replaced by a different package. That list only covers packages we know about, so forums running private or first-party extensions can declare their own migration paths with the `Superseded` extender:
+
+```php
+use FoF\UpgradeAdvisor\Extend\Superseded;
+
+return [
+    (new Superseded())
+        ->replaced('acme/translate', 'acme/translate-next')
+        ->intoCore('acme/nightmode'),
+];
+```
+
+- `replaced($package, $replacement)` — the extension moved to a different package. The report tells the admin to remove it before upgrading and install the replacement afterwards, and checks whether that replacement has a 2.0-ready release.
+- `intoCore($package)` — the functionality is now part of core, so the extension is simply removed with nothing installed in its place.
+
+To declare several at once, `add()` takes a map of package name to replacement, using `null` where nothing replaces it:
+
+```php
+(new Superseded())
+    ->add([
+        'acme/translate' => 'acme/translate-next',
+        'acme/nightmode' => null,
+    ]),
+```
+
+Entries you register take precedence over the bundled list, so this can also correct a mapping the advisor ships with. Because these extensions are reported as **Superseded**, they're flagged as needing action even if they do publish a 2.0-compatible release.
 
 ## Installation
 

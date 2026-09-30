@@ -18,6 +18,10 @@ namespace FoF\UpgradeAdvisor;
  *
  * These take precedence over the Packagist compatibility lookup: even if such a
  * package publishes a 2.0-compatible release, it should still be removed.
+ *
+ * Forums can declare their own mappings with the
+ * {@see \FoF\UpgradeAdvisor\Extend\Superseded} extender; those are merged over
+ * the curated map below, so they can also correct a bundled entry.
  */
 class SupersededExtensions
 {
@@ -74,21 +78,64 @@ class SupersededExtensions
     ];
 
     /**
+     * Entries contributed by the {@see \FoF\UpgradeAdvisor\Extend\Superseded}
+     * extender, merged over the curated map above.
+     *
+     * @var array<string, array{reason: string, replacement?: string|null}>
+     */
+    protected $additional = [];
+
+    /**
+     * @param array<string, array{reason: string, replacement?: string|null}> $additional
+     */
+    public function __construct(array $additional = [])
+    {
+        $this->additional = $additional;
+    }
+
+    /**
      * Look up superseded info for a package, or null if it isn't superseded.
+     *
+     * Extender-supplied entries take precedence over the curated map, so a
+     * forum can correct or override a bundled mapping.
      *
      * @return array{reason: string, replacement: string|null}|null
      */
-    public static function lookup(string $packageName): ?array
+    public function get(string $packageName): ?array
     {
-        if (! isset(self::MAP[$packageName])) {
+        $entry = $this->additional[$packageName] ?? self::MAP[$packageName] ?? null;
+
+        if ($entry === null) {
             return null;
         }
-
-        $entry = self::MAP[$packageName];
 
         return [
             'reason' => $entry['reason'],
             'replacement' => $entry['replacement'] ?? null,
         ];
+    }
+
+    /**
+     * Every known mapping, extender entries merged over the curated ones.
+     *
+     * @return array<string, array{reason: string, replacement?: string|null}>
+     */
+    public function all(): array
+    {
+        return array_merge(self::MAP, $this->additional);
+    }
+
+    /**
+     * Look up superseded info in the curated map only.
+     *
+     * @deprecated Resolve {@see SupersededExtensions} from the container and
+     *             call {@see get()} instead, so extender-supplied mappings are
+     *             honoured. Kept for backwards compatibility.
+     *
+     * @return array{reason: string, replacement: string|null}|null
+     */
+    public static function lookup(string $packageName): ?array
+    {
+        return (new self())->get($packageName);
     }
 }
