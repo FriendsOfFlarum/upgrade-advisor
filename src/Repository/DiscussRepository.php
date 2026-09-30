@@ -11,8 +11,8 @@
 
 namespace FoF\UpgradeAdvisor\Repository;
 
-use GuzzleHttp\Client;
 use FoF\UpgradeAdvisor\CacheGeneration;
+use GuzzleHttp\Client;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Psr\Log\LoggerInterface;
 

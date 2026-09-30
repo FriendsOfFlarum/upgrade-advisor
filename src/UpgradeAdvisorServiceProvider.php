@@ -15,7 +15,6 @@ use Flarum\Foundation\AbstractServiceProvider;
 use FoF\UpgradeAdvisor\Check\Checks\DatabaseVersionCheck;
 use FoF\UpgradeAdvisor\Check\Checks\ExtensionCompatibilityCheck;
 use FoF\UpgradeAdvisor\Check\Checks\PhpVersionCheck;
-use FoF\UpgradeAdvisor\SupersededExtensions;
 use GuzzleHttp\Client;
 
 class UpgradeAdvisorServiceProvider extends AbstractServiceProvider

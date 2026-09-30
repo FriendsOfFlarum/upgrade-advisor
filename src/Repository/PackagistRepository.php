@@ -12,8 +12,8 @@
 namespace FoF\UpgradeAdvisor\Repository;
 
 use Composer\Semver\Semver;
-use GuzzleHttp\Client;
 use FoF\UpgradeAdvisor\CacheGeneration;
+use GuzzleHttp\Client;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Psr\Log\LoggerInterface;
 
