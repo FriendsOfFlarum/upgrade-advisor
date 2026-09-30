@@ -31,6 +31,16 @@ class UpgradeAdvisorServiceProvider extends AbstractServiceProvider
             ];
         });
 
+        // Extender-supplied superseded mappings. The Superseded extender appends
+        // to this, and SupersededExtensions merges them over its curated map.
+        $this->container->singleton('fof-upgrade-advisor.superseded', function () {
+            return [];
+        });
+
+        $this->container->singleton(SupersededExtensions::class, function ($container) {
+            return new SupersededExtensions($container->make('fof-upgrade-advisor.superseded'));
+        });
+
         // Guzzle client used for external lookups (Packagist, discuss.flarum.org).
         // Bound contextually so we don't interfere with any global Client binding.
         $clientFactory = function () {
@@ -53,6 +63,11 @@ class UpgradeAdvisorServiceProvider extends AbstractServiceProvider
 
         $this->container
             ->when(Repository\ComposerRepository::class)
+            ->needs(Client::class)
+            ->give($clientFactory);
+
+        $this->container
+            ->when(AbandonedExtensions::class)
             ->needs(Client::class)
             ->give($clientFactory);
     }

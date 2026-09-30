@@ -17,145 +17,178 @@
 
   &-overall {
     display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 20px;
-    margin-bottom: 24px;
-    border-radius: var(--border-radius);
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    border: 1px solid var(--control-bg);
     border-left: 4px solid;
+    border-radius: var(--border-radius);
 
-    > .icon {
-      font-size: 32px;
-      flex-shrink: 0;
+    &-main {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px 16px;
+
+      h3 {
+        margin: 0;
+        font-size: 16px;
+      }
     }
 
-    &-text {
-      h3 {
-        margin: 0 0 4px;
-      }
+    &-icon {
+      font-size: 22px;
+    }
 
-      p {
-        margin: 0;
-        color: var(--muted-color);
-      }
+    &-footer {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px 12px;
     }
 
     &--pass {
-      background: fade(@alert-success-color, 12%);
-      border-color: @alert-success-color;
-
-      > .icon {
-        color: @alert-success-color;
-      }
+      border-left-color: @alert-success-color;
     }
 
-    &--warning {
-      background: fade(#f2c200, 15%);
-      border-color: #f2c200;
-
-      > .icon {
-        color: #c99700;
-      }
-    }
-
-    &--fail {
-      background: fade(@error-color, 12%);
-      border-color: @error-color;
-
-      > .icon {
-        color: @error-color;
-      }
-    }
-  }
-
-  &-category {
-    margin-bottom: 28px;
-
-    > h4 {
-      margin: 0 0 12px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--control-bg);
-      color: var(--muted-color);
-      text-transform: uppercase;
-      font-size: 12px;
-      letter-spacing: 0.05em;
-    }
-  }
-
-  &-checks {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  &-check {
-    display: flex;
-    gap: 12px;
-    padding: 14px 0;
-
-    &:not(:last-child) {
-      border-bottom: 1px solid var(--control-bg);
-    }
-
-    &-status .icon {
-      font-size: 18px;
-      margin-top: 2px;
-    }
-
-    &--pass &-status .icon {
+    &--pass &-icon {
       color: @alert-success-color;
     }
 
-    &--warning &-status .icon {
+    &--warning {
+      border-left-color: #f2c200;
+    }
+
+    &--warning &-icon {
       color: #c99700;
     }
 
-    &--fail &-status .icon {
+    &--fail {
+      border-left-color: @error-color;
+    }
+
+    &--fail &-icon {
       color: @error-color;
-    }
-
-    &-body {
-      flex: 1;
-      min-width: 0;
-    }
-
-    &-title {
-      font-weight: 600;
-    }
-
-    &-description {
-      color: var(--muted-color);
-      font-size: 13px;
-      margin-top: 2px;
     }
   }
 
-  &-extensions {
-    width: 100%;
-    margin-top: 12px;
-    border-collapse: collapse;
-    font-size: 13px;
+  &-progress {
+    flex: 1 1 360px;
+    min-width: 0;
 
-    th,
-    td {
-      text-align: left;
-      padding: 8px 10px;
-      border-bottom: 1px solid var(--control-bg);
-      vertical-align: top;
-    }
-
-    th {
+    &-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2px 12px;
+      margin-top: 5px;
+      font-size: 12px;
       color: var(--muted-color);
-      font-weight: 600;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
     }
+
+    &-key::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      margin-right: 5px;
+      border-radius: 50%;
+    }
+
+    &-key--ready::before {
+      background: @alert-success-color;
+    }
+
+    &-key--tasks::before {
+      background: #f2c200;
+    }
+
+    &-key--blocked::before {
+      background: @error-color;
+    }
+
+    &-key--unknown::before {
+      background: var(--muted-color);
+    }
+
+    &-bar {
+      display: flex;
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      background: var(--control-bg);
+    }
+
+    &-segment {
+      &--ready {
+        background: @alert-success-color;
+      }
+
+      &--tasks {
+        background: #f2c200;
+      }
+
+      &--blocked {
+        background: @error-color;
+      }
+
+      &--unknown {
+        background: var(--muted-color);
+        opacity: 0.6;
+      }
+    }
+  }
+
+  &-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    background: var(--control-bg);
+    font-size: 12px;
+    font-weight: 600;
+
+    &-note {
+      font-weight: normal;
+      color: var(--muted-color);
+    }
+
+    &--pass .icon {
+      color: @alert-success-color;
+    }
+
+    &--warning .icon {
+      color: #c99700;
+    }
+
+    &--fail .icon {
+      color: @error-color;
+    }
+  }
+
+  &-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &-freshness {
+    font-size: 12px;
+    color: var(--muted-color);
+    margin-right: 4px;
   }
 
   &-extension {
     &-title {
-      display: block;
       font-weight: 600;
       color: var(--text-color);
 
@@ -169,80 +202,201 @@
         }
       }
     }
+  }
+}
 
-    &-name {
-      display: block;
+.UpgradeAdvisorList {
+  overflow-x: auto;
+
+  &-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+
+    td {
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--control-bg);
+      vertical-align: middle;
+    }
+  }
+
+  &-groupHeader th {
+    padding: 14px 10px 6px;
+    text-align: left;
+    font-weight: normal;
+    border-bottom: 2px solid var(--control-bg);
+  }
+
+  &-toggle {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 8px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  &-chevron {
+    width: 10px;
+    font-size: 10px;
+    color: var(--muted-color);
+  }
+
+  &-groupIcon {
+    color: var(--muted-color);
+  }
+
+  &-group--decision &-groupIcon,
+  &-group--environment &-groupIcon {
+    color: @error-color;
+  }
+
+  &-group--replace &-groupIcon {
+    color: #c99700;
+  }
+
+  &-group--ready &-groupIcon {
+    color: @alert-success-color;
+  }
+
+  &-groupTitle {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  &-count {
+    padding: 0 7px;
+    border-radius: 10px;
+    background: var(--control-bg);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 18px;
+  }
+
+  &-groupDescription {
+    color: var(--muted-color);
+    font-size: 12px;
+  }
+
+  &-configure {
+    margin-left: 8px;
+    font-size: 12px;
+  }
+
+  &-title {
+    white-space: nowrap;
+  }
+
+  &-package {
+    color: var(--muted-color);
+    font-family: monospace;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  &-version {
+    color: var(--muted-color);
+    white-space: nowrap;
+  }
+
+  &-detail {
+    width: 35%;
+  }
+
+  &-row--no_path &-detail,
+  &-row--fail &-detail {
+    color: @error-color;
+  }
+
+  &-row--none &-detail .icon,
+  &-ok {
+    color: @alert-success-color;
+  }
+
+  &-contact {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  &-contactLinks .Button {
+    padding: 2px 6px;
+    color: var(--muted-color);
+
+    &:hover,
+    &:focus {
+      color: var(--link-color);
+    }
+  }
+
+  &-command {
+    td {
+      border-bottom: 0;
+      padding-top: 8px;
+    }
+
+    &-label {
       color: var(--muted-color);
-      font-size: 11px;
-      font-family: monospace;
-    }
-
-    &-status {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      white-space: nowrap;
-    }
-
-    &--incompatible &-status,
-    &--abandoned &-status {
-      color: @error-color;
-    }
-
-    // A ready replacement is good news: show it in green even though the row's
-    // status is otherwise red. Scoped under --abandoned so it beats the red
-    // status colour above.
-    &--abandoned &-status &-replacementReady {
-      color: @alert-success-color;
-      font-weight: 600;
-    }
-
-    &--superseded &-status {
-      color: #c99700;
-      font-weight: 600;
-    }
-
-    &--self &-status {
-      color: var(--muted-color);
-      font-style: italic;
-    }
-
-    &--compatible &-status {
-      color: @alert-success-color;
-    }
-
-    &--unknown &-status {
-      color: var(--muted-color);
-    }
-
-    &-contact {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 4px 12px;
-      margin-top: 8px;
       font-size: 12px;
-    }
-
-    &-contactLabel {
-      color: var(--muted-color);
-    }
-
-    &-contactLink {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
       white-space: nowrap;
+    }
 
-      .icon {
-        font-size: 11px;
-        opacity: 0.8;
+    &-body {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      code {
+        flex: 1;
+        min-width: 0;
+        padding: 5px 10px;
+        border-radius: var(--border-radius);
+        background: var(--control-bg);
+        font-size: 12px;
+        overflow-wrap: anywhere;
+      }
+
+      .Button {
+        flex-shrink: 0;
+        font-size: 12px;
       }
     }
   }
 
-  &-actions {
-    margin-top: 24px;
+  // Phones: keep title, detail and contact. Package and version are still on
+  // the extension's own page and in the CSV.
+  @media (max-width: 767px) {
+    &-package,
+    &-version {
+      display: none;
+    }
+
+    &-title {
+      white-space: normal;
+    }
+
+    &-detail {
+      width: auto;
+    }
+
+    &-contact {
+      white-space: normal;
+    }
+
+    &-command-label {
+      display: block;
+    }
+  }
+
+  &-final {
+    margin-top: 14px;
+    color: var(--muted-color);
+    font-size: 12px;
+    font-style: italic;
   }
 }
 

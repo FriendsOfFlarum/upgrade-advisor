@@ -1,217 +1,225 @@
 import app from 'flarum/admin/app';
 import Component, { ComponentAttrs } from 'flarum/common/Component';
-import Link from 'flarum/common/components/Link';
+import Button from 'flarum/common/components/Button';
 import LinkButton from 'flarum/common/components/LinkButton';
+import Tooltip from 'flarum/common/components/Tooltip';
 import icon from 'flarum/common/helpers/icon';
 import type Mithril from 'mithril';
 
-type ExtStatus = 'compatible' | 'incompatible' | 'unknown' | 'superseded' | 'abandoned';
+import type { CheckData, ExtAction, ExtensionCompat } from '../models/Report';
+import { checkDescription } from '../utils/checkText';
+import { contactLinks, extensionTitle, hintText } from '../utils/extensionLinks';
 
-interface ContactAuthor {
-  name: string | null;
-  email: string | null;
-  homepage: string | null;
-}
-
-interface Contact {
-  forum: string | null;
-  issues: string | null;
-  source: string | null;
-  authors: ContactAuthor[];
-}
-
-interface ExtensionCompat {
-  id: string;
-  name: string;
-  title: string;
-  installedVersion: string | null;
-  status: ExtStatus;
-  reason: 'into_core' | 'replaced' | 'self' | null;
-  replacement: string | null;
-  replacementCompatible: boolean | null;
-  compatibleVersion: string | null;
-  latestVersion: string | null;
-  source: 'packagist' | 'discuss' | 'core' | null;
-  contact: Contact;
-}
-
-// Statuses where the extension is "stuck" and the admin may want to ask the
-// author about upgrade plans.
-const CONTACTABLE: ExtStatus[] = ['incompatible', 'unknown', 'abandoned'];
+type GroupKey = 'environment' | 'decision' | 'unknown' | 'replace' | 'ready';
 
 interface Attrs extends ComponentAttrs {
   extensions: ExtensionCompat[];
+  checks: CheckData[];
 }
 
-const STATUS_ICONS: Record<ExtStatus, string> = {
-  compatible: 'fas fa-check',
-  incompatible: 'fas fa-times',
-  unknown: 'fas fa-question',
-  superseded: 'fas fa-box-archive',
-  abandoned: 'fas fa-triangle-exclamation',
-};
+/**
+ * UI groups, in the order an admin works through them: what needs a decision
+ * first, mechanical removals next, the ready inventory last. The CSV keeps the
+ * finer-grained action keys.
+ */
+const GROUPS: { key: GroupKey; icon: string; actions: ExtAction[] }[] = [
+  { key: 'decision', icon: 'fas fa-ban', actions: ['no_path'] },
+  { key: 'unknown', icon: 'fas fa-question-circle', actions: ['unknown'] },
+  { key: 'replace', icon: 'fas fa-exchange-alt', actions: ['remove', 'swap_after_upgrade', 'switch_replacement'] },
+  { key: 'ready', icon: 'fas fa-check-circle', actions: ['none', 'remove_last'] },
+];
 
+const COLUMNS = 5;
+
+/**
+ * Every extension in one table, grouped by what the admin needs to do. Each
+ * group explains itself once in its header; rows carry only what's specific
+ * to that extension.
+ */
 export default class ExtensionCompatibilityList extends Component<Attrs> {
-  view(vnode: Mithril.Vnode<Attrs, this>) {
-    const extensions = this.attrs.extensions;
+  collapsed: Record<GroupKey, boolean> = { environment: false, decision: false, unknown: false, replace: false, ready: true };
+  copied: string | null = null;
 
-    if (!extensions.length) {
-      return null;
-    }
-
-    // Show problems first: superseded/abandoned, incompatible, unknown,
-    // compatible; the advisor's own "remove me last" note sorts to the bottom.
-    const order: Record<ExtStatus, number> = { superseded: 0, abandoned: 0, incompatible: 1, unknown: 2, compatible: 3 };
-    const rank = (ext: ExtensionCompat) => (ext.reason === 'self' ? 99 : order[ext.status]);
-    const sorted = [...extensions].sort((a, b) => rank(a) - rank(b) || a.title.localeCompare(b.title));
+  view() {
+    // Warnings show on the header chips; only a failing check blocks the upgrade.
+    const failing = this.attrs.checks.filter((check) => check.status === 'fail');
+    const self = this.attrs.extensions.find((ext) => ext.action === 'remove_last');
 
     return (
-      <table className="UpgradeAdvisorPage-extensions">
-        <thead>
-          <tr>
-            <th>{app.translator.trans('fof-upgrade-advisor.admin.extensions.name')}</th>
-            <th>{app.translator.trans('fof-upgrade-advisor.admin.extensions.installed')}</th>
-            <th>{app.translator.trans('fof-upgrade-advisor.admin.extensions.status')}</th>
-          </tr>
-        </thead>
-        <tbody>{sorted.map((ext) => this.row(ext))}</tbody>
-      </table>
+      <div className="UpgradeAdvisorList">
+        <table className="UpgradeAdvisorList-table">
+          {failing.length > 0 &&
+            this.group(
+              'environment',
+              'fas fa-server',
+              failing.length,
+              failing.map((check) => this.checkRow(check))
+            )}
+
+          {GROUPS.map(({ key, icon: iconName, actions }) => {
+            const items = this.sorted(this.attrs.extensions.filter((ext) => actions.includes(ext.action)));
+
+            if (!items.length) return null;
+
+            return this.group(
+              key,
+              iconName,
+              items.length,
+              items.map((ext) => this.row(ext)),
+              key === 'replace' ? this.commands(items) : null
+            );
+          })}
+        </table>
+
+        {self && (
+          <p className="UpgradeAdvisorList-final">{app.translator.trans('fof-upgrade-advisor.admin.list.final_step', { title: self.title })}</p>
+        )}
+      </div>
+    );
+  }
+
+  group(key: GroupKey, iconName: string, count: number, rows: Mithril.Children[], footer?: Mithril.Children) {
+    const collapsed = this.collapsed[key];
+
+    return (
+      <tbody className={`UpgradeAdvisorList-group UpgradeAdvisorList-group--${key}`}>
+        <tr className="UpgradeAdvisorList-groupHeader">
+          <th colSpan={COLUMNS} scope="rowgroup">
+            <button type="button" className="UpgradeAdvisorList-toggle" aria-expanded={!collapsed} onclick={() => (this.collapsed[key] = !collapsed)}>
+              {icon(collapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-down', { className: 'UpgradeAdvisorList-chevron' })}
+              {icon(iconName, { className: 'UpgradeAdvisorList-groupIcon' })}
+              <span className="UpgradeAdvisorList-groupTitle">{app.translator.trans(`fof-upgrade-advisor.admin.list.groups.${key}.title`)}</span>
+              <span className="UpgradeAdvisorList-count">{count}</span>
+              <span className="UpgradeAdvisorList-groupDescription">
+                {app.translator.trans(`fof-upgrade-advisor.admin.list.groups.${key}.description`)}
+              </span>
+            </button>
+            {key === 'unknown' && !collapsed && (
+              <LinkButton
+                className="Button Button--link UpgradeAdvisorList-configure"
+                icon="fas fa-key"
+                href={app.route('extension', { id: 'fof-upgrade-advisor', page: 'repositories' })}
+              >
+                {app.translator.trans('fof-upgrade-advisor.admin.list.configure')}
+              </LinkButton>
+            )}
+          </th>
+        </tr>
+        {!collapsed && rows}
+        {!collapsed && footer}
+      </tbody>
     );
   }
 
   row(ext: ExtensionCompat) {
-    // The advisor itself is informational rather than a blocker, so give it a
-    // calmer variant of the superseded style.
-    const variant = ext.reason === 'self' ? 'self' : ext.status;
-
     return (
-      <tr className={`UpgradeAdvisorPage-extension UpgradeAdvisorPage-extension--${variant}`}>
-        <td>
-          {ext.reason === 'self' ? (
-            <span className="UpgradeAdvisorPage-extension-title">{ext.title}</span>
-          ) : (
-            // Most actions (disable, uninstall, check settings) start from the extension's own admin page.
-            <Link className="UpgradeAdvisorPage-extension-title" href={app.route('extension', { id: ext.id })}>
-              {ext.title}
-            </Link>
-          )}
-          <span className="UpgradeAdvisorPage-extension-name">{ext.name}</span>
+      <tr className={`UpgradeAdvisorList-row UpgradeAdvisorList-row--${ext.action}`}>
+        <td className="UpgradeAdvisorList-title">{extensionTitle(ext)}</td>
+        <td className="UpgradeAdvisorList-package">{ext.name}</td>
+        <td className="UpgradeAdvisorList-version">{ext.installedVersion || '—'}</td>
+        <td className="UpgradeAdvisorList-detail">
+          <Tooltip text={hintText(ext)}>
+            <span tabindex="0">{this.detail(ext)}</span>
+          </Tooltip>
         </td>
-        <td>{ext.installedVersion || '—'}</td>
-        <td>
-          <span className="UpgradeAdvisorPage-extension-status">
-            {icon(ext.reason === 'self' ? 'fas fa-circle-info' : STATUS_ICONS[ext.status])}
-            {this.statusLabel(ext)}
-          </span>
-          {this.contactLinks(ext)}
+        <td className="UpgradeAdvisorList-contact">{ext.action === 'no_path' || ext.action === 'unknown' ? contactLinks(ext) : null}</td>
+      </tr>
+    );
+  }
+
+  checkRow(check: CheckData) {
+    return (
+      <tr className="UpgradeAdvisorList-row UpgradeAdvisorList-row--fail">
+        <td className="UpgradeAdvisorList-title">
+          <span className="UpgradeAdvisorPage-extension-title">{app.translator.trans(`fof-upgrade-advisor.admin.checks.${check.id}.title`)}</span>
+        </td>
+        <td className="UpgradeAdvisorList-detail" colSpan={COLUMNS - 1}>
+          {checkDescription(check)}
         </td>
       </tr>
     );
   }
 
-  contactLinks(ext: ExtensionCompat): Mithril.Children {
-    if (!CONTACTABLE.includes(ext.status)) {
-      return null;
+  /**
+   * The one thing that's specific to this row; the group header covers the rest.
+   * The full hint is in the tooltip.
+   */
+  detail(ext: ExtensionCompat): Mithril.Children {
+    const key = (name: string, params: Record<string, string | null> = {}) =>
+      app.translator.trans(`fof-upgrade-advisor.admin.list.details.${name}`, params);
+    const replacement = { replacement: ext.replacement };
+
+    switch (ext.action) {
+      case 'none':
+        return ext.compatibleVersion ? [icon('fas fa-check'), ' ', key('none', { version: ext.compatibleVersion })] : key('none_unversioned');
+      case 'remove':
+        return key('remove');
+      case 'swap_after_upgrade':
+      case 'switch_replacement':
+        return ext.replacementCompatible === null && ext.action === 'switch_replacement'
+          ? key('replacement_unverified', replacement)
+          : [key('replacement', replacement), ext.replacementCompatible ? [' ', icon('fas fa-check', { className: 'UpgradeAdvisorList-ok' })] : null];
+      case 'no_path':
+        if (ext.status === 'abandoned') {
+          return ext.replacement ? key('replacement_not_ready', replacement) : key('abandoned');
+        }
+        return ext.latestVersion ? key('latest', { version: ext.latestVersion }) : key('no_release');
+      case 'remove_last':
+        return key('remove_last');
+      default:
+        return key('unknown');
     }
+  }
 
-    const contact = ext.contact;
-    const links: Mithril.Children[] = [];
+  /**
+   * One command for everything to remove before upgrading, and one for the
+   * replacements to install afterwards.
+   */
+  commands(items: ExtensionCompat[]): Mithril.Children {
+    // Several extensions can share a replacement; install it once.
+    const replacements = Array.from(new Set(items.map((ext) => ext.replacement).filter((name): name is string => !!name)));
 
-    if (contact.forum) {
-      links.push(this.contactLink('fas fa-comments', app.translator.trans('fof-upgrade-advisor.admin.extensions.contact.forum'), contact.forum));
-    }
+    return [
+      this.command('before', `composer remove ${items.map((ext) => ext.name).join(' ')}`),
+      replacements.length > 0 && this.command('after', `composer require ${replacements.join(' ')}`),
+    ];
+  }
 
-    if (contact.issues) {
-      links.push(this.contactLink('fas fa-bug', app.translator.trans('fof-upgrade-advisor.admin.extensions.contact.issues'), contact.issues));
-    } else if (contact.source) {
-      links.push(this.contactLink('fas fa-code-branch', app.translator.trans('fof-upgrade-advisor.admin.extensions.contact.source'), contact.source));
-    }
+  command(step: 'before' | 'after', text: string) {
+    const copied = this.copied === text;
 
-    contact.authors.forEach((author) => {
-      const href = author.email ? `mailto:${author.email}` : author.homepage;
+    return (
+      <tr className="UpgradeAdvisorList-command">
+        <td className="UpgradeAdvisorList-command-label">{app.translator.trans(`fof-upgrade-advisor.admin.list.${step}`)}</td>
+        <td colSpan={COLUMNS - 1}>
+          <div className="UpgradeAdvisorList-command-body">
+            <code>{text}</code>
+            {navigator.clipboard && (
+              <Button className="Button Button--link" icon={copied ? 'fas fa-check' : 'fas fa-copy'} onclick={() => this.copy(text)}>
+                {app.translator.trans(`fof-upgrade-advisor.admin.list.${copied ? 'copied' : 'copy'}`)}
+              </Button>
+            )}
+          </div>
+        </td>
+      </tr>
+    );
+  }
 
-      if (!href) {
-        return;
-      }
+  copy(text: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      this.copied = text;
+      m.redraw();
 
-      const label = author.name || author.email || author.homepage!;
-      links.push(this.contactLink(author.email ? 'fas fa-envelope' : 'fas fa-user', label, href));
+      setTimeout(() => {
+        if (this.copied === text) {
+          this.copied = null;
+          m.redraw();
+        }
+      }, 2000);
     });
-
-    if (!links.length) {
-      return null;
-    }
-
-    return (
-      <div className="UpgradeAdvisorPage-extension-contact">
-        <span className="UpgradeAdvisorPage-extension-contactLabel">
-          {app.translator.trans('fof-upgrade-advisor.admin.extensions.contact.label')}
-        </span>
-        {links}
-      </div>
-    );
   }
 
-  contactLink(iconName: string, label: Mithril.Children, href: string): Mithril.Children {
-    return (
-      <LinkButton className="Button Button--link UpgradeAdvisorPage-extension-contactLink" href={href} icon={iconName} external={true}>
-        {label}
-      </LinkButton>
-    );
-  }
-
-  statusLabel(ext: ExtensionCompat): Mithril.Children {
-    if (ext.status === 'compatible') {
-      return app.translator.trans('fof-upgrade-advisor.admin.extensions.compatible', { version: ext.compatibleVersion });
-    }
-
-    if (ext.status === 'unknown') {
-      return (
-        <LinkButton className="Button Button--link" href={app.route('extension', { id: 'fof-upgrade-advisor', page: 'repositories' })}>
-          {app.translator.trans('fof-upgrade-advisor.admin.extensions.unknown')}
-        </LinkButton>
-      );
-    }
-
-    if (ext.status === 'superseded') {
-      if (ext.reason === 'replaced') {
-        return app.translator.trans('fof-upgrade-advisor.admin.extensions.superseded_replaced', { replacement: ext.replacement });
-      }
-
-      if (ext.reason === 'self') {
-        return app.translator.trans('fof-upgrade-advisor.admin.extensions.superseded_self');
-      }
-
-      return app.translator.trans('fof-upgrade-advisor.admin.extensions.superseded_into_core');
-    }
-
-    if (ext.status === 'abandoned') {
-      return this.abandonedLabel(ext);
-    }
-
-    return app.translator.trans('fof-upgrade-advisor.admin.extensions.incompatible', { version: ext.latestVersion });
-  }
-
-  abandonedLabel(ext: ExtensionCompat): Mithril.Children {
-    if (!ext.replacement) {
-      return app.translator.trans('fof-upgrade-advisor.admin.extensions.abandoned');
-    }
-
-    // A replacement is only useful if it is itself ready for the target version.
-    // Highlight this case in green so the clear upgrade path stands out from the
-    // otherwise-red abandoned row.
-    if (ext.replacementCompatible === true) {
-      return (
-        <span className="UpgradeAdvisorPage-extension-replacementReady">
-          {app.translator.trans('fof-upgrade-advisor.admin.extensions.abandoned_replacement_ready', { replacement: ext.replacement })}
-        </span>
-      );
-    }
-
-    if (ext.replacementCompatible === false) {
-      return app.translator.trans('fof-upgrade-advisor.admin.extensions.abandoned_replacement_not_ready', { replacement: ext.replacement });
-    }
-
-    return app.translator.trans('fof-upgrade-advisor.admin.extensions.abandoned_replacement', { replacement: ext.replacement });
+  sorted(extensions: ExtensionCompat[]): ExtensionCompat[] {
+    return [...extensions].sort((a, b) => a.title.localeCompare(b.title));
   }
 }

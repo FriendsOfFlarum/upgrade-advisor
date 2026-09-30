@@ -62,4 +62,75 @@ class SupersededExtensionsTest extends TestCase
         $this->assertArrayHasKey('reason', $result);
         $this->assertArrayHasKey('replacement', $result);
     }
+
+    /** @test */
+    public function extender_mappings_are_merged_over_the_curated_map()
+    {
+        $superseded = new SupersededExtensions([
+            'acme/translate' => [
+                'reason' => SupersededExtensions::REPLACED,
+                'replacement' => 'acme/translate-next',
+            ],
+        ]);
+
+        $this->assertSame([
+            'reason' => SupersededExtensions::REPLACED,
+            'replacement' => 'acme/translate-next',
+        ], $superseded->get('acme/translate'));
+
+        // The curated entries are still present.
+        $this->assertSame([
+            'reason' => SupersededExtensions::REPLACED,
+            'replacement' => 'flarum/realtime',
+        ], $superseded->get('blomstra/realtime'));
+    }
+
+    /** @test */
+    public function extender_mappings_take_precedence_over_a_curated_entry()
+    {
+        $superseded = new SupersededExtensions([
+            'blomstra/realtime' => [
+                'reason' => SupersededExtensions::REPLACED,
+                'replacement' => 'acme/realtime-fork',
+            ],
+        ]);
+
+        $this->assertSame([
+            'reason' => SupersededExtensions::REPLACED,
+            'replacement' => 'acme/realtime-fork',
+        ], $superseded->get('blomstra/realtime'));
+    }
+
+    /** @test */
+    public function an_extender_entry_without_a_replacement_reports_null()
+    {
+        $superseded = new SupersededExtensions([
+            'acme/nightmode' => ['reason' => SupersededExtensions::INTO_CORE],
+        ]);
+
+        $this->assertSame([
+            'reason' => SupersededExtensions::INTO_CORE,
+            'replacement' => null,
+        ], $superseded->get('acme/nightmode'));
+    }
+
+    /** @test */
+    public function unknown_packages_are_still_null_on_an_instance()
+    {
+        $this->assertNull((new SupersededExtensions())->get('acme/not-listed'));
+    }
+
+    /** @test */
+    public function all_returns_curated_and_extender_entries()
+    {
+        $all = (new SupersededExtensions([
+            'acme/translate' => [
+                'reason' => SupersededExtensions::REPLACED,
+                'replacement' => 'acme/translate-next',
+            ],
+        ]))->all();
+
+        $this->assertArrayHasKey('acme/translate', $all);
+        $this->assertArrayHasKey('fof/nightmode', $all);
+    }
 }

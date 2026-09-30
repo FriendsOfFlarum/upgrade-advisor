@@ -14,6 +14,7 @@ namespace FoF\UpgradeAdvisor\Api\Controller;
 use Flarum\Api\Controller\AbstractShowController;
 use Flarum\Http\RequestUtil;
 use FoF\UpgradeAdvisor\Api\Serializer\ReportSerializer;
+use FoF\UpgradeAdvisor\CacheGeneration;
 use FoF\UpgradeAdvisor\Check\CheckRegistry;
 use FoF\UpgradeAdvisor\Report;
 use Psr\Http\Message\ServerRequestInterface;
@@ -31,9 +32,15 @@ class ShowReportController extends AbstractShowController
      */
     protected $registry;
 
-    public function __construct(CheckRegistry $registry)
+    /**
+     * @var CacheGeneration
+     */
+    protected $generation;
+
+    public function __construct(CheckRegistry $registry, CacheGeneration $generation)
     {
         $this->registry = $registry;
+        $this->generation = $generation;
     }
 
     /**
@@ -43,6 +50,6 @@ class ShowReportController extends AbstractShowController
     {
         RequestUtil::getActor($request)->assertAdmin();
 
-        return Report::build($this->registry);
+        return Report::build($this->registry, $this->generation, time());
     }
 }

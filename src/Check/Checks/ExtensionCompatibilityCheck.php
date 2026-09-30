@@ -13,8 +13,10 @@ namespace FoF\UpgradeAdvisor\Check\Checks;
 
 use Flarum\Extension\Extension;
 use Flarum\Extension\ExtensionManager;
+use FoF\UpgradeAdvisor\AbandonedExtensions;
 use FoF\UpgradeAdvisor\Check\Check;
 use FoF\UpgradeAdvisor\Check\CheckResult;
+use FoF\UpgradeAdvisor\ExtensionAction;
 use FoF\UpgradeAdvisor\Repository\ComposerRepository;
 use FoF\UpgradeAdvisor\Repository\DiscussRepository;
 use FoF\UpgradeAdvisor\Repository\PackagistRepository;
@@ -58,18 +60,35 @@ class ExtensionCompatibilityCheck implements Check
      */
     protected $composer;
 
+    /**
+     * @var SupersededExtensions
+     */
+    protected $superseded;
+
+    /**
+     * @var AbandonedExtensions|null
+     */
+    protected $abandoned;
+
     public function __construct(
         ExtensionManager $extensions,
         PackagistRepository $packagist,
         DiscussRepository $discuss,
         RepositoryConfig $repositories,
-        ComposerRepository $composer
+        ComposerRepository $composer,
+        ?SupersededExtensions $superseded = null,
+        ?AbandonedExtensions $abandoned = null
     ) {
         $this->extensions = $extensions;
         $this->packagist = $packagist;
         $this->discuss = $discuss;
         $this->repositories = $repositories;
         $this->composer = $composer;
+        // Optional so existing callers constructing this directly keep working;
+        // the container always supplies the bound instance carrying any
+        // extender-registered mappings.
+        $this->superseded = $superseded ?? new SupersededExtensions();
+        $this->abandoned = $abandoned;
     }
 
     public function id(): string
@@ -85,23 +104,44 @@ class ExtensionCompatibilityCheck implements Check
     public function run(): CheckResult
     {
         $extensions = [];
+        $ready = 0; // nothing to do before upgrading
         $actionable = 0; // needs action before upgrading (incompatible / superseded / abandoned)
         $unknown = 0;
+        $blocked = 0; // no 2.0 path: the only thing that truly blocks the upgrade
+
+        $installed = [];
 
         foreach ($this->installedExtensions() as $extension) {
             $packageName = $extension->composerJsonAttribute('name');
 
-            if (! is_string($packageName) || $packageName === '') {
-                continue;
+            if (is_string($packageName) && $packageName !== '') {
+                $installed[$packageName] = $extension;
             }
+        }
 
+        // Fetch all remote data in concurrent batches up front; resolve() then
+        // reads it from memory instead of making a request per extension.
+        $this->packagist->prefetch(array_keys($installed));
+        $this->discuss->prefetch(array_values(array_map(function (Extension $extension) {
+            return $extension->composerJsonAttribute('support.forum');
+        }, $installed)));
+
+        foreach ($installed as $packageName => $extension) {
             $entry = $this->resolve($extension, $packageName);
+            $entry['action'] = ExtensionAction::for($entry);
+            $entry['hint'] = ExtensionAction::hint($entry);
 
             $extensions[] = $entry;
 
-            if ($this->isActionable($entry)) {
+            if ($entry['action'] === ExtensionAction::NO_PATH) {
+                $blocked++;
+            }
+
+            if (ExtensionAction::isBlocking($entry['action'])) {
                 $actionable++;
-            } elseif ($entry['status'] === 'unknown') {
+            } elseif (ExtensionAction::isReady($entry['action'])) {
+                $ready++;
+            } else {
                 $unknown++;
             }
         }
@@ -109,19 +149,24 @@ class ExtensionCompatibilityCheck implements Check
         $meta = [
             'flarumMajor' => Targets::FLARUM_MAJOR,
             'total' => count($extensions),
+            'ready' => $ready,
             'actionable' => $actionable,
+            'blocked' => $blocked,
+            'tasks' => $actionable - $blocked,
             'unknown' => $unknown,
             'extensions' => $extensions,
         ];
 
         $current = "$actionable / ".count($extensions);
 
-        if ($actionable > 0) {
+        // Only an extension with no 2.0 path blocks the upgrade. Removals and
+        // replacements are work with a clear path, and unchecked extensions
+        // aren't known to be broken, so both are warnings.
+        if ($blocked > 0) {
             return CheckResult::fail($current, $meta);
         }
 
-        // Everything resolvable is compatible, but some couldn't be looked up.
-        if ($unknown > 0) {
+        if ($actionable > 0 || $unknown > 0) {
             return CheckResult::warning($current, $meta);
         }
 
@@ -164,7 +209,7 @@ class ExtensionCompatibilityCheck implements Check
         ];
 
         // 1. Curated superseded list.
-        $superseded = SupersededExtensions::lookup($packageName);
+        $superseded = $this->superseded->get($packageName);
 
         if ($superseded !== null) {
             return array_merge($entry, [
@@ -172,13 +217,17 @@ class ExtensionCompatibilityCheck implements Check
                 'reason' => $superseded['reason'],
                 'replacement' => $superseded['replacement'],
                 'replacementCompatible' => $this->replacementCompatible($superseded['replacement']),
+                'source' => 'superseded_list',
             ]);
         }
 
-        // 2a. Core's abandoned status (authoritative, includes replacement).
-        // getAbandoned() returns false, true (no replacement), or the replacement
-        // package name as a string.
-        $abandoned = $extension->getAbandoned();
+        // 2a. Abandoned status (authoritative, includes replacement): the
+        // flarum/abandoned-extensions list first, as core does, then composer's
+        // abandoned field via core. Both give true (no replacement) or the
+        // replacement package name; getAbandoned() gives false when neither applies.
+        $listed = $this->abandoned !== null ? $this->abandoned->status($packageName) : null;
+        $abandoned = $listed !== null ? $listed : $extension->getAbandoned();
+        $abandonedSource = $listed !== null ? 'abandoned_list' : 'composer_abandoned';
 
         if ($abandoned !== false) {
             // Composer's replacement may carry a version constraint (e.g.
@@ -191,7 +240,7 @@ class ExtensionCompatibilityCheck implements Check
                 'status' => 'abandoned',
                 'replacement' => $replacement,
                 'replacementCompatible' => $this->replacementCompatible($replacement),
-                'source' => 'core',
+                'source' => $abandonedSource,
             ]);
         }
 
@@ -204,20 +253,7 @@ class ExtensionCompatibilityCheck implements Check
         // over the discuss abandoned tag: if a real 2.0 release has been
         // published, the extension is NOT a dead end, even if a moderator tagged
         // its support thread "abandoned" before the release shipped.
-        $compat = $this->packagist->compatibility($packageName, self::TARGET_CORE_VERSION);
-        $source = 'packagist';
-
-        if ($compat['status'] === 'unknown') {
-            foreach ($this->repositories->all() as $repo) {
-                $repoCompat = $this->composer->compatibility($repo, $packageName, self::TARGET_CORE_VERSION);
-
-                if ($repoCompat['status'] !== 'unknown') {
-                    $compat = $repoCompat;
-                    $source = $repo['type'] === RepositoryConfig::TYPE_FLOXUM ? 'floxum' : 'composer';
-                    break;
-                }
-            }
-        }
+        [$compat, $source] = $this->lookup($packageName);
 
         // A published compatible release always wins.
         if ($compat['status'] === 'compatible') {
@@ -314,10 +350,37 @@ class ExtensionCompatibilityCheck implements Check
     }
 
     /**
-     * Determine whether a suggested replacement package has a target-compatible
-     * release on Packagist.
+     * Look a package up on Packagist, then in each configured private
+     * repository until one of them knows it.
      *
-     * @return bool|null True/false when Packagist could answer, null when there
+     * @return array{0: array<string, mixed>, 1: string} The compatibility result
+     *                                                 (with at least status, compatible_version
+     *                                                 and latest_version) and the source that answered.
+     */
+    protected function lookup(string $packageName): array
+    {
+        $compat = $this->packagist->compatibility($packageName, self::TARGET_CORE_VERSION);
+
+        if ($compat['status'] !== 'unknown') {
+            return [$compat, 'packagist'];
+        }
+
+        foreach ($this->repositories->all() as $repo) {
+            $repoCompat = $this->composer->compatibility($repo, $packageName, self::TARGET_CORE_VERSION);
+
+            if ($repoCompat['status'] !== 'unknown') {
+                return [$repoCompat, $repo['type'] === RepositoryConfig::TYPE_FLOXUM ? 'floxum' : 'composer'];
+            }
+        }
+
+        return [$compat, 'packagist'];
+    }
+
+    /**
+     * Determine whether a suggested replacement package has a target-compatible
+     * release, from the same sources as installed extensions.
+     *
+     * @return bool|null True/false when a source could answer, null when there
      *                   is no replacement or its compatibility is unknown.
      */
     protected function replacementCompatible(?string $replacement): ?bool
@@ -330,7 +393,7 @@ class ExtensionCompatibilityCheck implements Check
         // "acme/foo:^2.0"; we only need the package name for the lookup.
         $package = explode(':', $replacement, 2)[0];
 
-        $compat = $this->packagist->compatibility($package, self::TARGET_CORE_VERSION);
+        [$compat] = $this->lookup($package);
 
         if ($compat['status'] === 'compatible') {
             return true;
@@ -341,23 +404,6 @@ class ExtensionCompatibilityCheck implements Check
         }
 
         return null;
-    }
-
-    /**
-     * Whether a resolved entry requires action before upgrading (and therefore
-     * counts toward the overall fail state).
-     *
-     * @param array<string, mixed> $entry
-     */
-    protected function isActionable(array $entry): bool
-    {
-        if ($entry['status'] === 'incompatible' || $entry['status'] === 'abandoned') {
-            return true;
-        }
-
-        // Superseded extensions are actionable, except the advisor itself, which
-        // is only a "remove as the final step" reminder.
-        return $entry['status'] === 'superseded' && $entry['reason'] !== SupersededExtensions::SELF;
     }
 
     /**

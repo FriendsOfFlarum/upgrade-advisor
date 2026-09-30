@@ -7,6 +7,15 @@ import ReportTab from './ReportTab';
 import RepositoriesSettings from './RepositoriesSettings';
 
 export default class UpgradeAdvisorPage extends ExtensionPage<ExtensionPageAttrs> {
+  sections(vnode: Mithril.VnodeDOM<ExtensionPageAttrs, this>) {
+    const items = super.sections(vnode);
+
+    // The advisor has no permissions; the empty "Permissions" block is just noise.
+    items.remove('permissions');
+
+    return items;
+  }
+
   content() {
     const page = m.route.param('page') || 'report';
 
