@@ -11,8 +11,8 @@
 
 namespace FoF\UpgradeAdvisor\Repository;
 
-use Composer\Semver\Semver;
 use FoF\UpgradeAdvisor\CacheGeneration;
+use FoF\UpgradeAdvisor\CoreConstraint;
 use GuzzleHttp\Client;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Psr\Log\LoggerInterface;
@@ -226,11 +226,7 @@ class PackagistRepository
 
     protected function constraintAllows(string $constraint, string $coreVersion): bool
     {
-        try {
-            return Semver::satisfies($coreVersion, $constraint);
-        } catch (\Throwable $e) {
-            return false;
-        }
+        return CoreConstraint::supports($constraint, $coreVersion);
     }
 
     protected function isDev(string $version): bool
