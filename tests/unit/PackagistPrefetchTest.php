@@ -112,4 +112,16 @@ class PackagistPrefetchTest extends TestCase
 
         $this->assertSame(['/p2/acme/one.json', '/p2/acme/two.json'], $this->requestedPaths());
     }
+
+    /** @test */
+    public function an_open_ended_constraint_from_before_2_0_is_not_compatible()
+    {
+        $repo = $this->repo();
+        $this->mock->append($this->p2('acme/old', '1.1.1', '>=0.1.0-beta.12'));
+
+        $result = $repo->compatibility('acme/old', '2.0.0');
+
+        $this->assertSame('incompatible', $result['status']);
+        $this->assertSame('1.1.1', $result['latest_version']);
+    }
 }
