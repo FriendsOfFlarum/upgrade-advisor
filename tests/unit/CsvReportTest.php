@@ -15,10 +15,10 @@ use FoF\UpgradeAdvisor\Check\CheckResult;
 use FoF\UpgradeAdvisor\CsvReport;
 use FoF\UpgradeAdvisor\Report;
 use Mockery;
-use PHPUnit\Framework\TestCase;
-use Symfony\Contracts\Translation\TranslatorInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 class CsvReportTest extends TestCase
 {

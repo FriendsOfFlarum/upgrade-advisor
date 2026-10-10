@@ -16,9 +16,9 @@ use Flarum\Settings\SettingsRepositoryInterface;
 use FoF\UpgradeAdvisor\AbandonedExtensions;
 use Illuminate\Contracts\Container\Container;
 use Mockery;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
-use PHPUnit\Framework\Attributes\Test;
 
 class AbandonedExtensionsTest extends TestCase
 {

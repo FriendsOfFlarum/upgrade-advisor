@@ -12,10 +12,10 @@
 namespace FoF\UpgradeAdvisor\Tests\unit;
 
 use FoF\UpgradeAdvisor\ExtensionAction;
-use PHPUnit\Framework\TestCase;
-use Symfony\Component\Yaml\Yaml;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\Yaml\Yaml;
 
 class ExtensionActionTest extends TestCase
 {

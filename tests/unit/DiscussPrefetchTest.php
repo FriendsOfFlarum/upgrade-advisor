@@ -22,9 +22,9 @@ use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Repository;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
-use PHPUnit\Framework\Attributes\Test;
 
 class DiscussPrefetchTest extends TestCase
 {

@@ -14,8 +14,8 @@ namespace FoF\UpgradeAdvisor\Tests\unit;
 use FoF\UpgradeAdvisor\CacheGeneration;
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Repository;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
 
 class CacheGenerationTest extends TestCase
 {

@@ -12,8 +12,8 @@
 namespace FoF\UpgradeAdvisor\Tests\unit;
 
 use FoF\UpgradeAdvisor\SupersededExtensions;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
 
 class SupersededExtensionsTest extends TestCase
 {

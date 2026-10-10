@@ -12,9 +12,9 @@
 namespace FoF\UpgradeAdvisor\Tests\unit;
 
 use FoF\UpgradeAdvisor\Repository\ComposerRepository;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
-use PHPUnit\Framework\Attributes\Test;
 
 class ComposerRepositoryTest extends TestCase
 {

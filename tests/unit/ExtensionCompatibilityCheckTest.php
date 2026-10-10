@@ -25,9 +25,9 @@ use FoF\UpgradeAdvisor\Repository\RepositoryConfig;
 use FoF\UpgradeAdvisor\SupersededExtensions;
 use FoF\UpgradeAdvisor\Target;
 use Mockery;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
 
 class ExtensionCompatibilityCheckTest extends TestCase
 {

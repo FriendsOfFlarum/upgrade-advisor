@@ -19,9 +19,9 @@ use FoF\UpgradeAdvisor\Target;
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Repository;
 use Mockery;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
-use PHPUnit\Framework\Attributes\Test;
 
 class ReportTest extends TestCase
 {

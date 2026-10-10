@@ -12,10 +12,10 @@
 namespace FoF\UpgradeAdvisor\Tests\unit;
 
 use FoF\UpgradeAdvisor\Repository\DiscussRepository;
-use PHPUnit\Framework\TestCase;
-use ReflectionMethod;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 
 class DiscussRepositoryTest extends TestCase
 {
