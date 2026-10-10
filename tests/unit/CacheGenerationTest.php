@@ -15,6 +15,7 @@ use FoF\UpgradeAdvisor\CacheGeneration;
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Repository;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class CacheGenerationTest extends TestCase
 {
@@ -33,7 +34,7 @@ class CacheGenerationTest extends TestCase
         return new CacheGeneration($this->cache);
     }
 
-    /** @test */
+    #[Test]
     public function keys_are_namespaced_and_stable_until_refreshed()
     {
         $key = $this->generation()->key('packagist.acme/foo');
@@ -43,7 +44,7 @@ class CacheGenerationTest extends TestCase
         $this->assertSame($key, $this->generation()->key('packagist.acme/foo'));
     }
 
-    /** @test */
+    #[Test]
     public function refreshing_moves_every_key_to_a_new_generation()
     {
         $before = $this->generation()->key('packagist.acme/foo');
@@ -53,7 +54,7 @@ class CacheGenerationTest extends TestCase
         $this->assertNotSame($before, $this->generation()->key('packagist.acme/foo'));
     }
 
-    /** @test */
+    #[Test]
     public function refreshing_again_within_the_cooldown_is_ignored()
     {
         $generation = $this->generation();
@@ -67,7 +68,7 @@ class CacheGenerationTest extends TestCase
         $this->assertNotSame($key, $generation->key('x'));
     }
 
-    /** @test */
+    #[Test]
     public function records_when_it_was_last_refreshed()
     {
         $this->assertNull($this->generation()->refreshedAt());
@@ -77,7 +78,7 @@ class CacheGenerationTest extends TestCase
         $this->assertSame(1234, $this->generation()->refreshedAt());
     }
 
-    /** @test */
+    #[Test]
     public function reads_timestamps_back_from_stores_that_return_numbers_as_strings()
     {
         // Laravel's Redis store saves numeric values unserialized, so they come back as strings.
@@ -87,7 +88,7 @@ class CacheGenerationTest extends TestCase
         $this->assertFalse($this->generation()->refresh(1234 + CacheGeneration::COOLDOWN - 1));
     }
 
-    /** @test */
+    #[Test]
     public function data_is_never_reported_older_than_the_lookup_ttl()
     {
         $now = 100000;

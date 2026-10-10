@@ -24,6 +24,7 @@ use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Repository;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use PHPUnit\Framework\Attributes\Test;
 
 class DiscussPrefetchTest extends TestCase
 {
@@ -60,7 +61,7 @@ class DiscussPrefetchTest extends TestCase
         ]));
     }
 
-    /** @test */
+    #[Test]
     public function prefetching_answers_later_lookups_without_further_requests()
     {
         $repo = $this->repo();

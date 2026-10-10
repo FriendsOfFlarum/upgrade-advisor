@@ -14,6 +14,8 @@ namespace FoF\UpgradeAdvisor\Tests\unit;
 use FoF\UpgradeAdvisor\ExtensionAction;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Yaml\Yaml;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
 
 class ExtensionActionTest extends TestCase
 {
@@ -32,10 +34,8 @@ class ExtensionActionTest extends TestCase
         ], $overrides);
     }
 
-    /**
-     * @dataProvider entries
-     * @test
-     */
+    #[Test]
+    #[DataProvider('entries')]
     public function classifies_each_entry_into_an_action_group(array $overrides, string $expected)
     {
         $this->assertSame($expected, ExtensionAction::for($this->entry($overrides)));
@@ -57,7 +57,7 @@ class ExtensionActionTest extends TestCase
         ];
     }
 
-    /** @test */
+    #[Test]
     public function only_pre_upgrade_work_counts_as_blocking()
     {
         $blocking = array_filter(ExtensionAction::ALL, [ExtensionAction::class, 'isBlocking']);
@@ -71,7 +71,7 @@ class ExtensionActionTest extends TestCase
         ], array_values($blocking));
     }
 
-    /** @test */
+    #[Test]
     public function ready_means_nothing_to_do_before_upgrading()
     {
         $this->assertTrue(ExtensionAction::isReady(ExtensionAction::NONE));
@@ -80,10 +80,8 @@ class ExtensionActionTest extends TestCase
         $this->assertFalse(ExtensionAction::isReady(ExtensionAction::REMOVE));
     }
 
-    /**
-     * @dataProvider hints
-     * @test
-     */
+    #[Test]
+    #[DataProvider('hints')]
     public function picks_a_hint_and_its_parameters_for_each_entry(array $overrides, string $key, array $params)
     {
         $this->assertSame(['key' => $key, 'params' => $params], ExtensionAction::hint($this->entry($overrides)));
@@ -107,7 +105,7 @@ class ExtensionActionTest extends TestCase
         ];
     }
 
-    /** @test */
+    #[Test]
     public function every_hint_has_an_english_translation()
     {
         $translations = Yaml::parseFile(__DIR__.'/../../locale/en.yml')['fof-upgrade-advisor']['admin']['hints'];
@@ -119,7 +117,7 @@ class ExtensionActionTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function each_action_maps_to_the_readiness_bucket_shown_in_the_header()
     {
         $this->assertSame([

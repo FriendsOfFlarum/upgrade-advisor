@@ -17,6 +17,8 @@ use FoF\UpgradeAdvisor\Report;
 use Mockery;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
 
 class CsvReportTest extends TestCase
 {
@@ -73,10 +75,8 @@ class CsvReportTest extends TestCase
         ], CheckResult::FAIL, '2.0', 1790000000, 1789990000);
     }
 
-    /**
-     * @dataProvider filenames
-     * @test
-     */
+    #[Test]
+    #[DataProvider('filenames')]
     public function names_the_file_after_the_community(string $title, string $expected)
     {
         // 2026-09-30 12:00 UTC
@@ -93,10 +93,8 @@ class CsvReportTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider cells
-     * @test
-     */
+    #[Test]
+    #[DataProvider('cells')]
     public function neutralises_cells_a_spreadsheet_would_run_as_a_formula(string $value, string $expected)
     {
         $this->assertSame($expected, CsvReport::cell($value));
@@ -116,7 +114,7 @@ class CsvReportTest extends TestCase
         ];
     }
 
-    /** @test */
+    #[Test]
     public function lists_environment_checks_first_then_extensions_in_the_admin_page_order()
     {
         $rows = $this->csv()->rows($this->report([
@@ -133,7 +131,7 @@ class CsvReportTest extends TestCase
         $this->assertSame(['environment', 'database', 'extension', 'extension', 'extension', 'extension'], array_column($rows, 'Type'));
     }
 
-    /** @test */
+    #[Test]
     public function an_extension_row_carries_everything_needed_to_raise_a_ticket()
     {
         $rows = $this->csv()->rows($this->report([
@@ -182,7 +180,7 @@ class CsvReportTest extends TestCase
         ], $rows[2]);
     }
 
-    /** @test */
+    #[Test]
     public function an_environment_row_describes_the_check_like_the_admin_page_does()
     {
         $row = $this->csv()->rows($this->report([]), 'https://example.com/admin')[1];
@@ -199,7 +197,7 @@ class CsvReportTest extends TestCase
         $this->assertSame('', $row['Admin page']);
     }
 
-    /** @test */
+    #[Test]
     public function renders_excel_friendly_csv_with_a_header_row()
     {
         $csv = $this->csv();
@@ -216,7 +214,7 @@ class CsvReportTest extends TestCase
         $this->assertSame("'=cmd|calc", $lines[3][1]);
     }
 
-    /** @test */
+    #[Test]
     public function a_failing_environment_check_is_blocked()
     {
         $report = new Report([

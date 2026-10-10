@@ -16,6 +16,8 @@ use FoF\UpgradeAdvisor\Check\Checks\DatabaseVersionCheck;
 use Illuminate\Database\ConnectionInterface;
 use Mockery;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
 
 class DatabaseVersionCheckTest extends TestCase
 {
@@ -49,10 +51,8 @@ class DatabaseVersionCheckTest extends TestCase
         };
     }
 
-    /**
-     * @dataProvider mysqlVersions
-     * @test
-     */
+    #[Test]
+    #[DataProvider('mysqlVersions')]
     public function grades_mysql_versions(string $raw, string $expectedStatus)
     {
         $result = $this->checkReturning($raw)->run();
@@ -71,10 +71,8 @@ class DatabaseVersionCheckTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider mariadbVersions
-     * @test
-     */
+    #[Test]
+    #[DataProvider('mariadbVersions')]
     public function grades_mariadb_versions(string $raw, string $expectedStatus)
     {
         $result = $this->checkReturning($raw)->run();
@@ -93,7 +91,7 @@ class DatabaseVersionCheckTest extends TestCase
         ];
     }
 
-    /** @test */
+    #[Test]
     public function strips_the_mariadb_5_5_5_legacy_prefix()
     {
         // Some MariaDB configs report "5.5.5-10.11.6-MariaDB...". The real
@@ -106,7 +104,7 @@ class DatabaseVersionCheckTest extends TestCase
         $this->assertSame('MariaDB', $result->meta['server']);
     }
 
-    /** @test */
+    #[Test]
     public function warns_when_the_version_cannot_be_determined()
     {
         $result = $this->checkReturning(null)->run();
@@ -115,7 +113,7 @@ class DatabaseVersionCheckTest extends TestCase
         $this->assertSame('unknown', $result->meta['warningType']);
     }
 
-    /** @test */
+    #[Test]
     public function warns_with_below_recommended_type_when_between_floor_and_recommended()
     {
         $result = $this->checkReturning('8.0.36')->run();
@@ -123,7 +121,7 @@ class DatabaseVersionCheckTest extends TestCase
         $this->assertSame('below_recommended', $result->meta['warningType']);
     }
 
-    /** @test */
+    #[Test]
     public function detects_mysql_when_no_mariadb_marker_is_present()
     {
         $result = $this->checkReturning('8.4.0')->run();

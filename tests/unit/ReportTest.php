@@ -20,6 +20,7 @@ use Illuminate\Cache\Repository;
 use Mockery;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
+use PHPUnit\Framework\Attributes\Test;
 
 class ReportTest extends TestCase
 {
@@ -38,37 +39,37 @@ class ReportTest extends TestCase
         return $m->invoke(null, $checks);
     }
 
-    /** @test */
+    #[Test]
     public function all_passing_is_a_pass()
     {
         $this->assertSame(CheckResult::PASS, $this->worst([CheckResult::PASS, CheckResult::PASS]));
     }
 
-    /** @test */
+    #[Test]
     public function no_checks_is_a_pass()
     {
         $this->assertSame(CheckResult::PASS, $this->worst([]));
     }
 
-    /** @test */
+    #[Test]
     public function a_single_warning_makes_the_whole_report_warn()
     {
         $this->assertSame(CheckResult::WARNING, $this->worst([CheckResult::PASS, CheckResult::WARNING, CheckResult::PASS]));
     }
 
-    /** @test */
+    #[Test]
     public function a_single_fail_makes_the_whole_report_fail()
     {
         $this->assertSame(CheckResult::FAIL, $this->worst([CheckResult::PASS, CheckResult::WARNING, CheckResult::FAIL]));
     }
 
-    /** @test */
+    #[Test]
     public function fail_outranks_warning()
     {
         $this->assertSame(CheckResult::FAIL, $this->worst([CheckResult::WARNING, CheckResult::FAIL, CheckResult::WARNING]));
     }
 
-    /** @test */
+    #[Test]
     public function records_when_it_was_checked_and_how_old_the_remote_data_can_be()
     {
         $registry = Mockery::mock(CheckRegistry::class);

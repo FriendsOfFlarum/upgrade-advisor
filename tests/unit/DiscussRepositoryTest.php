@@ -14,6 +14,8 @@ namespace FoF\UpgradeAdvisor\Tests\unit;
 use FoF\UpgradeAdvisor\Repository\DiscussRepository;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
 
 class DiscussRepositoryTest extends TestCase
 {
@@ -26,10 +28,8 @@ class DiscussRepositoryTest extends TestCase
         return $m->invoke($repo, $url);
     }
 
-    /**
-     * @dataProvider urls
-     * @test
-     */
+    #[Test]
+    #[DataProvider('urls')]
     public function extracts_the_discussion_id_from_supported_urls(?string $url, ?string $expected)
     {
         $this->assertSame($expected, $this->discussionId($url));

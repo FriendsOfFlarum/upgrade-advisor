@@ -13,16 +13,17 @@ namespace FoF\UpgradeAdvisor\Tests\unit;
 
 use FoF\UpgradeAdvisor\SupersededExtensions;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class SupersededExtensionsTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function returns_null_for_a_package_not_in_the_map()
     {
         $this->assertNull(SupersededExtensions::lookup('acme/not-listed'));
     }
 
-    /** @test */
+    #[Test]
     public function flags_into_core_extensions_with_no_replacement()
     {
         foreach (['fof/nightmode', 'blomstra/fontawesome', 'blomstra/database-queue', 'flarum-com/database-queue'] as $package) {
@@ -34,7 +35,7 @@ class SupersededExtensionsTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function flags_replaced_extensions_with_their_replacement()
     {
         $result = SupersededExtensions::lookup('blomstra/realtime');
@@ -44,7 +45,7 @@ class SupersededExtensionsTest extends TestCase
         $this->assertSame('flarum/realtime', $result['replacement']);
     }
 
-    /** @test */
+    #[Test]
     public function flags_the_advisor_itself_with_the_self_reason()
     {
         $result = SupersededExtensions::lookup('fof/upgrade-advisor');
@@ -54,7 +55,7 @@ class SupersededExtensionsTest extends TestCase
         $this->assertNull($result['replacement']);
     }
 
-    /** @test */
+    #[Test]
     public function lookup_result_always_has_reason_and_replacement_keys()
     {
         $result = SupersededExtensions::lookup('fof/nightmode');
@@ -63,7 +64,7 @@ class SupersededExtensionsTest extends TestCase
         $this->assertArrayHasKey('replacement', $result);
     }
 
-    /** @test */
+    #[Test]
     public function extender_mappings_are_merged_over_the_curated_map()
     {
         $superseded = new SupersededExtensions([
@@ -85,7 +86,7 @@ class SupersededExtensionsTest extends TestCase
         ], $superseded->get('blomstra/realtime'));
     }
 
-    /** @test */
+    #[Test]
     public function extender_mappings_take_precedence_over_a_curated_entry()
     {
         $superseded = new SupersededExtensions([
@@ -101,7 +102,7 @@ class SupersededExtensionsTest extends TestCase
         ], $superseded->get('blomstra/realtime'));
     }
 
-    /** @test */
+    #[Test]
     public function an_extender_entry_without_a_replacement_reports_null()
     {
         $superseded = new SupersededExtensions([
@@ -114,13 +115,13 @@ class SupersededExtensionsTest extends TestCase
         ], $superseded->get('acme/nightmode'));
     }
 
-    /** @test */
+    #[Test]
     public function unknown_packages_are_still_null_on_an_instance()
     {
         $this->assertNull((new SupersededExtensions())->get('acme/not-listed'));
     }
 
-    /** @test */
+    #[Test]
     public function all_returns_curated_and_extender_entries()
     {
         $all = (new SupersededExtensions([

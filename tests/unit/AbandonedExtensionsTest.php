@@ -28,6 +28,7 @@ use Illuminate\Contracts\Container\Container;
 use Mockery;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use PHPUnit\Framework\Attributes\Test;
 
 class AbandonedExtensionsTest extends TestCase
 {
@@ -97,7 +98,7 @@ class AbandonedExtensionsTest extends TestCase
         ]));
     }
 
-    /** @test */
+    #[Test]
     public function on_older_core_it_reads_the_upstream_list_itself()
     {
         $this->mock->append($this->upstream());
@@ -109,7 +110,7 @@ class AbandonedExtensionsTest extends TestCase
         $this->assertCount(1, $this->history);
     }
 
-    /** @test */
+    #[Test]
     public function on_older_core_the_list_is_cached_between_requests()
     {
         $this->mock->append($this->upstream());
@@ -120,7 +121,7 @@ class AbandonedExtensionsTest extends TestCase
         $this->assertCount(1, $this->history);
     }
 
-    /** @test */
+    #[Test]
     public function on_older_core_a_failed_fetch_means_nothing_is_listed_and_is_retried_next_time()
     {
         $this->mock->append(
@@ -132,7 +133,7 @@ class AbandonedExtensionsTest extends TestCase
         $this->assertSame('acme/new', $this->list(false)->status('acme/old'));
     }
 
-    /** @test */
+    #[Test]
     public function on_newer_core_it_uses_cores_synced_copy_without_fetching()
     {
         $this->settings->shouldReceive('get')->with(AbandonedExtensionsFetcher::SETTINGS_KEY)
@@ -145,7 +146,7 @@ class AbandonedExtensionsTest extends TestCase
         $this->assertCount(0, $this->history);
     }
 
-    /** @test */
+    #[Test]
     public function refreshing_on_newer_core_runs_cores_sync_without_emailing_admins()
     {
         $fetcher = Mockery::mock(AbandonedExtensionsFetcher::class);
@@ -157,7 +158,7 @@ class AbandonedExtensionsTest extends TestCase
         $this->addToAssertionCount(1);
     }
 
-    /** @test */
+    #[Test]
     public function a_failing_core_sync_does_not_break_the_refresh()
     {
         $fetcher = Mockery::mock(AbandonedExtensionsFetcher::class);

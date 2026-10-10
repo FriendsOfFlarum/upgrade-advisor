@@ -24,6 +24,8 @@ use FoF\UpgradeAdvisor\Repository\RepositoryConfig;
 use FoF\UpgradeAdvisor\SupersededExtensions;
 use Mockery;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
 
 class ExtensionCompatibilityCheckTest extends TestCase
 {
@@ -102,7 +104,7 @@ class ExtensionCompatibilityCheckTest extends TestCase
         };
     }
 
-    /** @test */
+    #[Test]
     public function each_extension_carries_its_action_and_the_meta_counts_them()
     {
         $result = $this->check([
@@ -132,7 +134,7 @@ class ExtensionCompatibilityCheckTest extends TestCase
         $this->assertSame(1, $result->meta['unknown']);
     }
 
-    /** @test */
+    #[Test]
     public function extender_supplied_mappings_are_treated_as_superseded()
     {
         $result = $this->check(
@@ -155,7 +157,7 @@ class ExtensionCompatibilityCheckTest extends TestCase
         $this->assertSame(1, $result->meta['actionable']);
     }
 
-    /** @test */
+    #[Test]
     public function a_replacement_only_in_a_private_repository_is_still_checked_for_readiness()
     {
         $result = $this->check(
@@ -167,7 +169,7 @@ class ExtensionCompatibilityCheckTest extends TestCase
         $this->assertTrue($result->meta['extensions'][0]['replacementCompatible']);
     }
 
-    /** @test */
+    #[Test]
     public function the_abandoned_extensions_list_flags_extensions_packagist_does_not()
     {
         $result = $this->check(
@@ -188,10 +190,8 @@ class ExtensionCompatibilityCheckTest extends TestCase
         $this->assertSame(ExtensionAction::SWITCH_REPLACEMENT, $entry['action']);
     }
 
-    /**
-     * @dataProvider outcomes
-     * @test
-     */
+    #[Test]
+    #[DataProvider('outcomes')]
     public function only_extensions_with_no_path_block_the_upgrade(array $packagist, string $status, int $blocked, int $tasks)
     {
         $result = $this->check($packagist)->run();
@@ -213,7 +213,7 @@ class ExtensionCompatibilityCheckTest extends TestCase
         ];
     }
 
-    /** @test */
+    #[Test]
     public function the_source_says_why_an_extension_was_flagged()
     {
         $sources = array_column($this->check(
@@ -237,7 +237,7 @@ class ExtensionCompatibilityCheckTest extends TestCase
         ], $sources);
     }
 
-    /** @test */
+    #[Test]
     public function on_core_before_1_8_12_abandoned_status_comes_from_installed_json()
     {
         $result = $this->check(
@@ -269,7 +269,7 @@ class ExtensionCompatibilityCheckTest extends TestCase
         $this->assertSame('compatible', $entries['acme/ready']['status']);
     }
 
-    /** @test */
+    #[Test]
     public function on_core_before_1_8_12_flarum_marketplace_abandoned_flags_are_ignored_as_core_does()
     {
         // Packages from flarum.org/composer can carry an unreliable `abandoned: true`;
