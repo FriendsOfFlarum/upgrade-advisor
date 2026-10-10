@@ -1,10 +1,14 @@
 import Model from 'flarum/common/Model';
 export type CheckStatus = 'pass' | 'warning' | 'fail';
+/**
+ * 'latest' when the advisor is dormant: there is no target to check against.
+ */
+export type OverallStatus = CheckStatus | 'latest';
 export type ExtStatus = 'compatible' | 'incompatible' | 'unknown' | 'superseded' | 'abandoned';
 /**
  * Mirrors FoF\UpgradeAdvisor\ExtensionAction.
  */
-export type ExtAction = 'none' | 'remove' | 'swap_after_upgrade' | 'switch_replacement' | 'no_path' | 'unknown' | 'remove_last';
+export type ExtAction = 'none' | 'remove' | 'swap_after_upgrade' | 'switch_replacement' | 'no_path' | 'unknown';
 export declare const BLOCKING_ACTIONS: ExtAction[];
 export declare const READY_ACTIONS: ExtAction[];
 export interface ContactAuthor {
@@ -24,7 +28,7 @@ export interface ExtensionCompat {
     title: string;
     installedVersion: string | null;
     status: ExtStatus;
-    reason: 'into_core' | 'replaced' | 'self' | null;
+    reason: 'into_core' | 'replaced' | null;
     replacement: string | null;
     replacementCompatible: boolean | null;
     compatibleVersion: string | null;
@@ -45,8 +49,11 @@ export interface CheckData {
     meta: Record<string, any>;
 }
 export default class Report extends Model {
-    overall(): CheckStatus;
-    flarumMajor(): string;
+    overall(): OverallStatus;
+    /**
+     * The release being checked against, e.g. "3.0"; null while dormant.
+     */
+    target(): string | null;
     checkedAt(): Date | null | undefined;
     dataAsOf(): Date | null | undefined;
     checks(): CheckData[];

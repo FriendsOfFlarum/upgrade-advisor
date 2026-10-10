@@ -5,6 +5,8 @@ type GroupKey = 'environment' | 'decision' | 'unknown' | 'replace' | 'ready';
 interface Attrs extends ComponentAttrs {
     extensions: ExtensionCompat[];
     checks: CheckData[];
+    /** The release being checked against, e.g. "3.0". */
+    target: string;
 }
 /**
  * Every extension in one table, grouped by what the admin needs to do. Each
