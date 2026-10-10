@@ -37,9 +37,6 @@ class ExtensionAction
     /** Couldn't be looked up anywhere. */
     public const UNKNOWN = 'unknown';
 
-    /** The advisor itself: remove as the final step. */
-    public const REMOVE_LAST = 'remove_last';
-
     /**
      * In the order the UI and CSV present them: blockers, unchecked, to-dos, ready.
      */
@@ -50,7 +47,6 @@ class ExtensionAction
         self::SWAP_AFTER_UPGRADE,
         self::SWITCH_REPLACEMENT,
         self::NONE,
-        self::REMOVE_LAST,
     ];
 
     /**
@@ -60,10 +56,6 @@ class ExtensionAction
     {
         switch ($entry['status']) {
             case 'superseded':
-                if ($entry['reason'] === SupersededExtensions::SELF) {
-                    return self::REMOVE_LAST;
-                }
-
                 return $entry['reason'] === SupersededExtensions::REPLACED ? self::SWAP_AFTER_UPGRADE : self::REMOVE;
 
             case 'abandoned':
@@ -159,6 +151,6 @@ class ExtensionAction
      */
     public static function isReady(string $action): bool
     {
-        return $action === self::NONE || $action === self::REMOVE_LAST;
+        return $action === self::NONE;
     }
 }

@@ -176,7 +176,7 @@ class ExtensionCompatibilityCheck implements Check
     /**
      * Resolve a single extension's status, applying source precedence:
      *
-     *   1. Curated superseded list (into-core / replaced / the advisor itself).
+     *   1. Curated superseded list (into-core / replaced).
      *   2. Core's abandoned status (from the flarum/abandoned-extensions map and
      *      composer's abandoned field, including any replacement) — authoritative,
      *      wins over everything else.

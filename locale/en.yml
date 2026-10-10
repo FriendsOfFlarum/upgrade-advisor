@@ -47,7 +47,6 @@ fof-upgrade-advisor:
       export: Export CSV
 
     list:
-      final_step: "Last step: remove {title} once the upgrade is done."
       before: "Before upgrading"
       after: "After upgrading"
       copy: Copy
@@ -80,7 +79,6 @@ fof-upgrade-advisor:
         latest: "Latest {version} is 1.x only"
         no_release: No 2.0 release
         unknown: Not found
-        remove_last: Remove as the final step
 
     hints:
       none: "Ready: {version} supports Flarum 2.0."
@@ -94,7 +92,6 @@ fof-upgrade-advisor:
       no_path_abandoned: "Abandoned with no replacement. Plan to remove it or find an alternative."
       no_path_replacement_not_ready: "Abandoned. Its replacement {replacement} isn't 2.0-ready yet."
       unknown: "Not found on Packagist or any configured repository. If it's premium or private, add repository access."
-      remove_last: "Remove this advisor as the final upgrade step."
 
     tabs:
       report: Readiness report

@@ -89,7 +89,7 @@ composer update fof/upgrade-advisor:"*"
 php flarum cache:clear
 ```
 
-Once your forum reports as ready and you've upgraded to Flarum 2.0, this extension has done its job and can be removed.
+The advisor has a Flarum 2.0 release, so there's no need to remove it before upgrading.
 
 ## Links
 
