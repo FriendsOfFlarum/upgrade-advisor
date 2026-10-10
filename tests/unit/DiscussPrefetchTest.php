@@ -73,8 +73,17 @@ class DiscussPrefetchTest extends TestCase
         // Non-discuss URLs and nulls are skipped rather than requested.
         $repo->prefetch(['https://discuss.flarum.org/d/1-acme', 'https://discuss.flarum.org/d/2', 'https://github.com/acme/foo', null]);
 
-        $this->assertSame(['abandoned' => false, 'has1x' => false, 'has2x' => true], $repo->signals('https://discuss.flarum.org/d/1-acme'));
+        $this->assertSame(['abandoned' => false, 'majors' => [2]], $repo->signals('https://discuss.flarum.org/d/1-acme'));
         $this->assertNull($repo->signals('https://discuss.flarum.org/d/2'));
         $this->assertCount(2, $this->history);
+    }
+
+    #[Test]
+    public function every_version_tag_is_read_so_any_major_can_be_targeted()
+    {
+        $repo = $this->repo();
+        $this->mock->append($this->discussion(['extensions', 'version-3x', 'version-2x', 'abandoned', 'version-xx']));
+
+        $this->assertSame(['abandoned' => true, 'majors' => [2, 3]], $repo->signals('https://discuss.flarum.org/d/7'));
     }
 }

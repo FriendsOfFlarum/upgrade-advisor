@@ -8,42 +8,43 @@
  * For the full copyright and license information, please view the LICENSE.md
  * file that was distributed with this source code.
  */
-
 namespace FoF\UpgradeAdvisor\Api\Controller;
 
-use Flarum\Api\Controller\AbstractShowController;
 use Flarum\Http\RequestUtil;
-use FoF\UpgradeAdvisor\Api\Serializer\ReportSerializer;
+use FoF\UpgradeAdvisor\Api\ReportDocument;
 use FoF\UpgradeAdvisor\CacheGeneration;
 use FoF\UpgradeAdvisor\Check\CheckRegistry;
 use FoF\UpgradeAdvisor\Report;
+use FoF\UpgradeAdvisor\Target;
+use Illuminate\Contracts\Container\Container;
+use Laminas\Diactoros\Response\JsonResponse;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Tobscure\JsonApi\Document;
+use Psr\Http\Server\RequestHandlerInterface;
 
-/**
- * @TODO: Remove this in favor of one of the API resource classes that were added.
- *      Or extend an existing API Resource to add this to.
- *      Or use a vanilla RequestHandlerInterface controller.
- *      @link https://docs.flarum.org/2.x/extend/api#endpoints
- */
-class ShowReportController extends AbstractShowController
+class ShowReportController implements RequestHandlerInterface
 {
-    /**
-     * {@inheritdoc}
-     */
-    public $serializer = ReportSerializer::class;
-
-    public function __construct(protected CheckRegistry $registry, protected CacheGeneration $generation)
+    public function __construct(protected CheckRegistry $registry, protected CacheGeneration $generation, protected Container $container)
     {
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function data(ServerRequestInterface $request, Document $document)
+    public function handle(ServerRequestInterface $request): ResponseInterface
     {
         RequestUtil::getActor($request)->assertAdmin();
 
-        return Report::build($this->registry, $this->generation, time());
+        return new JsonResponse(ReportDocument::from($this->report($this->target())));
+    }
+
+    protected function report(?Target $target): Report
+    {
+        return Report::build($this->registry, $this->generation, time(), $target);
+    }
+
+    /**
+     * Null while the advisor is dormant.
+     */
+    protected function target(): ?Target
+    {
+        return $this->container->make('fof-upgrade-advisor.target');
     }
 }

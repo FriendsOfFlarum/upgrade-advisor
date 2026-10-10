@@ -27,7 +27,6 @@ class ComposerRepositoryTest extends TestCase
     protected function invoke(string $method, array $args)
     {
         $m = new ReflectionMethod(ComposerRepository::class, $method);
-        $m->setAccessible(true);
 
         return $m->invoke($this->repo(), ...$args);
     }

@@ -12,12 +12,12 @@
 namespace FoF\UpgradeAdvisor;
 
 /**
- * A curated list of 1.x extensions that should be removed before (or as part of)
- * upgrading to the next Flarum major, because their functionality was absorbed
- * into core or moved to a different package.
+ * Extensions that should be removed before (or as part of) upgrading to the
+ * target, because their functionality was absorbed into core or moved to a
+ * different package.
  *
  * These take precedence over the Packagist compatibility lookup: even if such a
- * package publishes a 2.0-compatible release, it should still be removed.
+ * package publishes a compatible release, it should still be removed.
  *
  * Forums can declare their own mappings with the
  * {@see \FoF\UpgradeAdvisor\Extend\Superseded} extender; those are merged over
@@ -38,44 +38,12 @@ class SupersededExtensions
     public const REPLACED = 'replaced';
 
     /**
-     * Reason: the Upgrade Advisor itself. It only supports the current major
-     * version, so it should be removed once the upgrade is complete — there is
-     * intentionally no next-major release of it.
+     * Curated map of composer package name => [reason, replacement?] for the
+     * current target. Empty while the advisor is dormant.
+     *
+     * @var array<string, array{reason: string, replacement?: string|null}>
      */
-    public const SELF = 'self';
-
-    /**
-     * Map of composer package name => [reason, replacement?].
-     */
-    protected const MAP = [
-        'fof/upgrade-advisor' => [
-            'reason' => self::SELF,
-        ],
-        'fof/nightmode' => [
-            'reason' => self::INTO_CORE,
-        ],
-        'blomstra/fontawesome' => [
-            'reason' => self::INTO_CORE,
-        ],
-        'blomstra/database-queue' => [
-            'reason' => self::INTO_CORE,
-        ],
-        'flarum-com/database-queue' => [
-            'reason' => self::INTO_CORE,
-        ],
-        'blomstra/realtime' => [
-            'reason' => self::REPLACED,
-            'replacement' => 'flarum/realtime',
-        ],
-        'kilowhat/flarum-ext-audit-pro' => [
-            'reason' => self::REPLACED,
-            'replacement' => 'flarum/audit',
-        ],
-        'kilowhat/flarum-ext-audit-free' => [
-            'reason' => self::REPLACED,
-            'replacement' => 'flarum/audit',
-        ],
-    ];
+    protected const array MAP = [];
 
     /**
      * @param array<string, array{reason: string, replacement?: string|null}> $additional
@@ -94,7 +62,7 @@ class SupersededExtensions
      */
     public function get(string $packageName): ?array
     {
-        $entry = $this->additional[$packageName] ?? self::MAP[$packageName] ?? null;
+        $entry = $this->additional[$packageName] ?? static::MAP[$packageName] ?? null;
 
         if ($entry === null) {
             return null;
@@ -113,20 +81,6 @@ class SupersededExtensions
      */
     public function all(): array
     {
-        return array_merge(self::MAP, $this->additional);
-    }
-
-    /**
-     * Look up superseded info in the curated map only.
-     *
-     * @deprecated Resolve {@see SupersededExtensions} from the container and
-     *             call {@see get()} instead, so extender-supplied mappings are
-     *             honoured. Kept for backwards compatibility.
-     *
-     * @return array{reason: string, replacement: string|null}|null
-     */
-    public static function lookup(string $packageName): ?array
-    {
-        return (new self())->get($packageName);
+        return array_merge(static::MAP, $this->additional);
     }
 }

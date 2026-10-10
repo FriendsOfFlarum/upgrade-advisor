@@ -22,37 +22,20 @@ use FoF\UpgradeAdvisor\Repository\DiscussRepository;
 use FoF\UpgradeAdvisor\Repository\PackagistRepository;
 use FoF\UpgradeAdvisor\Repository\RepositoryConfig;
 use FoF\UpgradeAdvisor\SupersededExtensions;
-use FoF\UpgradeAdvisor\Targets;
+use FoF\UpgradeAdvisor\Target;
 
 class ExtensionCompatibilityCheck implements Check
 {
-    /**
-     * The concrete core version we test extension constraints against.
-     *
-     * Extensions declare constraints like "^2.0" or ">=2.0 <3.0"; asking whether
-     * they are satisfied by the first stable release of the target major is the
-     * pragmatic definition of "compatible".
-     */
-    protected const TARGET_CORE_VERSION = '2.0.0';
-
-    /**
-     * @var SupersededExtensions
-     */
-    protected $superseded;
-
     public function __construct(
         protected ExtensionManager $extensions,
         protected PackagistRepository $packagist,
         protected DiscussRepository $discuss,
         protected RepositoryConfig $repositories,
         protected ComposerRepository $composer,
-        ?SupersededExtensions $superseded = null,
-        protected ?AbandonedExtensions $abandoned = null
+        protected SupersededExtensions $superseded,
+        protected AbandonedExtensions $abandoned,
+        protected Target $target
     ) {
-        // Optional so existing callers constructing this directly keep working;
-        // the container always supplies the bound instance carrying any
-        // extender-registered mappings.
-        $this->superseded = $superseded ?? new SupersededExtensions();
     }
 
     public function id(): string
@@ -71,7 +54,7 @@ class ExtensionCompatibilityCheck implements Check
         $ready = 0; // nothing to do before upgrading
         $actionable = 0; // needs action before upgrading (incompatible / superseded / abandoned)
         $unknown = 0;
-        $blocked = 0; // no 2.0 path: the only thing that truly blocks the upgrade
+        $blocked = 0; // no path to the target: the only thing that truly blocks the upgrade
 
         $installed = [];
 
@@ -93,7 +76,7 @@ class ExtensionCompatibilityCheck implements Check
         foreach ($installed as $packageName => $extension) {
             $entry = $this->resolve($extension, $packageName);
             $entry['action'] = ExtensionAction::for($entry);
-            $entry['hint'] = ExtensionAction::hint($entry);
+            $entry['hint'] = ExtensionAction::hint($entry, $this->target->label());
 
             $extensions[] = $entry;
 
@@ -111,7 +94,7 @@ class ExtensionCompatibilityCheck implements Check
         }
 
         $meta = [
-            'flarumMajor' => Targets::FLARUM_MAJOR,
+            'target' => $this->target->label(),
             'total' => count($extensions),
             'ready' => $ready,
             'actionable' => $actionable,
@@ -123,7 +106,7 @@ class ExtensionCompatibilityCheck implements Check
 
         $current = "$actionable / ".count($extensions);
 
-        // Only an extension with no 2.0 path blocks the upgrade. Removals and
+        // Only an extension with no path to the target blocks the upgrade. Removals and
         // replacements are work with a clear path, and unchecked extensions
         // aren't known to be broken, so both are warnings.
         if ($blocked > 0) {
@@ -146,12 +129,13 @@ class ExtensionCompatibilityCheck implements Check
      *      wins over everything else.
      *   3. Compatibility from Packagist, then any configured private repos:
      *        - a published COMPATIBLE release always wins (even over a discuss
-     *          "abandoned" tag — a real 2.0 release means it isn't a dead end);
+     *          "abandoned" tag — a real compatible release means it isn't a dead end);
      *        - otherwise, a discuss "abandoned" tag is reported next (soft signal,
      *          but the most useful message when there's no compatible release);
      *        - otherwise a concrete INCOMPATIBLE result is reported.
-     *   4. Discuss version tags (version-1x / version-2x) as a fallback when
-     *      nothing above resolved.
+     *   4. Discuss version tags (version-2x, version-3x, ...) as a fallback when
+     *      nothing above resolved and the target is a new major. Tags name
+     *      majors only, so they can't vouch for a minor.
      *   5. Otherwise unknown.
      *
      * @return array<string, mixed>
@@ -188,9 +172,9 @@ class ExtensionCompatibilityCheck implements Check
         // 2a. Abandoned status (authoritative, includes replacement): the
         // flarum/abandoned-extensions list first, as core does, then composer's
         // abandoned field. Both give true (no replacement) or the replacement
-        // package name; composerAbandoned() gives false when neither applies.
-        $listed = $this->abandoned !== null ? $this->abandoned->status($packageName) : null;
-        $abandoned = $listed !== null ? $listed : $this->composerAbandoned($extension);
+        // package name; getAbandoned() gives false when neither applies.
+        $listed = $this->abandoned->status($packageName);
+        $abandoned = $listed !== null ? $listed : $extension->getAbandoned();
         $abandonedSource = $listed !== null ? 'abandoned_list' : 'composer_abandoned';
 
         if ($abandoned !== false) {
@@ -214,7 +198,7 @@ class ExtensionCompatibilityCheck implements Check
 
         // 3. Compatibility from Packagist, then any configured private repos.
         // A concrete result here (compatible OR incompatible) is authoritative
-        // over the discuss abandoned tag: if a real 2.0 release has been
+        // over the discuss abandoned tag: if a real compatible release has been
         // published, the extension is NOT a dead end, even if a moderator tagged
         // its support thread "abandoned" before the release shipped.
         [$compat, $source] = $this->lookup($packageName);
@@ -248,9 +232,9 @@ class ExtensionCompatibilityCheck implements Check
         }
 
         // 4. Discuss version tags as a fallback when nothing else resolved.
-        if ($signals !== null && ($signals['has2x'] || $signals['has1x'])) {
+        if ($this->target->isMajor() && $signals !== null && $signals['majors'] !== []) {
             return array_merge($entry, [
-                'status' => $signals['has2x'] ? 'compatible' : 'incompatible',
+                'status' => in_array($this->target->major(), $signals['majors'], true) ? 'compatible' : 'incompatible',
                 'source' => 'discuss',
             ]);
         }
@@ -323,14 +307,14 @@ class ExtensionCompatibilityCheck implements Check
      */
     protected function lookup(string $packageName): array
     {
-        $compat = $this->packagist->compatibility($packageName, self::TARGET_CORE_VERSION);
+        $compat = $this->packagist->compatibility($packageName, $this->target->version);
 
         if ($compat['status'] !== 'unknown') {
             return [$compat, 'packagist'];
         }
 
         foreach ($this->repositories->all() as $repo) {
-            $repoCompat = $this->composer->compatibility($repo, $packageName, self::TARGET_CORE_VERSION);
+            $repoCompat = $this->composer->compatibility($repo, $packageName, $this->target->version);
 
             if ($repoCompat['status'] !== 'unknown') {
                 return [$repoCompat, $repo['type'] === RepositoryConfig::TYPE_FLOXUM ? 'floxum' : 'composer'];
@@ -368,45 +352,6 @@ class ExtensionCompatibilityCheck implements Check
         }
 
         return null;
-    }
-
-    /**
-     * Composer's abandoned flag for an installed extension.
-     *
-     * Core 1.8.12+ exposes it as Extension::getAbandoned(). Older cores don't,
-     * but they build each Extension from its vendor/composer/installed.json
-     * entry, which carries the same field, so read it there with core's rules.
-     *
-     * @return string|bool False if not abandoned, true if abandoned with no
-     *                     replacement, or the replacement package name.
-     */
-    protected function composerAbandoned(Extension $extension)
-    {
-        if ($this->coreReportsAbandoned($extension)) {
-            return $extension->getAbandoned();
-        }
-
-        $abandoned = $extension->composerJsonAttribute('abandoned');
-
-        if (is_string($abandoned) && $abandoned !== '') {
-            return $abandoned;
-        }
-
-        if ($abandoned === true) {
-            // As core does: packages from flarum.org/composer may carry an
-            // unreliable abandoned flag, so only trust it from elsewhere.
-            return strpos((string) $extension->composerJsonAttribute('dist.url'), 'flarum.org/composer') === false;
-        }
-
-        return false;
-    }
-
-    /**
-     * Whether core provides Extension::getAbandoned() (added in 1.8.12).
-     */
-    protected function coreReportsAbandoned(Extension $extension): bool
-    {
-        return method_exists($extension, 'getAbandoned');
     }
 
     /**

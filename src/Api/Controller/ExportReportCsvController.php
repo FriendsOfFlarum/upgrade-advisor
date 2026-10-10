@@ -11,6 +11,7 @@
 
 namespace FoF\UpgradeAdvisor\Api\Controller;
 
+use Flarum\Http\Exception\RouteNotFoundException;
 use Flarum\Http\RequestUtil;
 use Flarum\Http\UrlGenerator;
 use Flarum\Settings\SettingsRepositoryInterface;
@@ -18,6 +19,7 @@ use FoF\UpgradeAdvisor\CacheGeneration;
 use FoF\UpgradeAdvisor\Check\CheckRegistry;
 use FoF\UpgradeAdvisor\CsvReport;
 use FoF\UpgradeAdvisor\Report;
+use Illuminate\Contracts\Container\Container;
 use Laminas\Diactoros\Response;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -32,7 +34,7 @@ use Psr\Http\Server\RequestHandlerInterface;
  */
 class ExportReportCsvController implements RequestHandlerInterface
 {
-    public function __construct(protected CheckRegistry $registry, protected CacheGeneration $generation, protected CsvReport $csv, protected SettingsRepositoryInterface $settings, protected UrlGenerator $url)
+    public function __construct(protected CheckRegistry $registry, protected CacheGeneration $generation, protected CsvReport $csv, protected SettingsRepositoryInterface $settings, protected UrlGenerator $url, protected Container $container)
     {
     }
 
@@ -40,8 +42,15 @@ class ExportReportCsvController implements RequestHandlerInterface
     {
         RequestUtil::getActor($request)->assertAdmin();
 
+        $target = $this->container->make('fof-upgrade-advisor.target');
+
+        // Dormant, there is no report to export.
+        if ($target === null) {
+            throw new RouteNotFoundException();
+        }
+
         $now = time();
-        $report = Report::build($this->registry, $this->generation, $now);
+        $report = Report::build($this->registry, $this->generation, $now, $target);
         $filename = CsvReport::filename((string) $this->settings->get('forum_title'), $now);
 
         $response = new Response('php://memory', 200, [

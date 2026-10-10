@@ -23,7 +23,6 @@ class DiscussRepositoryTest extends TestCase
     {
         $repo = (new \ReflectionClass(DiscussRepository::class))->newInstanceWithoutConstructor();
         $m = new ReflectionMethod(DiscussRepository::class, 'discussionId');
-        $m->setAccessible(true);
 
         return $m->invoke($repo, $url);
     }

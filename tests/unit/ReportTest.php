@@ -15,6 +15,7 @@ use FoF\UpgradeAdvisor\CacheGeneration;
 use FoF\UpgradeAdvisor\Check\CheckRegistry;
 use FoF\UpgradeAdvisor\Check\CheckResult;
 use FoF\UpgradeAdvisor\Report;
+use FoF\UpgradeAdvisor\Target;
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Repository;
 use Mockery;
@@ -34,7 +35,6 @@ class ReportTest extends TestCase
         }, $statuses);
 
         $m = new ReflectionMethod(Report::class, 'worst');
-        $m->setAccessible(true);
 
         return $m->invoke(null, $checks);
     }
@@ -78,10 +78,43 @@ class ReportTest extends TestCase
         $generation = new CacheGeneration(new Repository(new ArrayStore()));
         $generation->refresh(5000);
 
-        $report = Report::build($registry, $generation, 5030);
+        $report = Report::build($registry, $generation, 5030, $this->target());
 
         $this->assertSame(5030, $report->checkedAt);
         $this->assertSame(5000, $report->dataAsOf);
+
+        Mockery::close();
+    }
+
+    protected function target(): Target
+    {
+        return new Target('3.0.0', '8.4.0');
+    }
+
+    #[Test]
+    public function with_a_target_the_report_names_it()
+    {
+        $registry = Mockery::mock(CheckRegistry::class);
+        $registry->shouldReceive('run')->andReturn([]);
+
+        $report = Report::build($registry, new CacheGeneration(new Repository(new ArrayStore())), 5030, $this->target());
+
+        $this->assertSame('3.0', $report->target);
+
+        Mockery::close();
+    }
+
+    #[Test]
+    public function without_a_target_nothing_is_checked()
+    {
+        $registry = Mockery::mock(CheckRegistry::class);
+        $registry->shouldNotReceive('run');
+
+        $report = Report::build($registry, new CacheGeneration(new Repository(new ArrayStore())), 5030, null);
+
+        $this->assertSame(Report::LATEST, $report->overall);
+        $this->assertNull($report->target);
+        $this->assertSame([], $report->checks);
 
         Mockery::close();
     }

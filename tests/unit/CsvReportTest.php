@@ -72,7 +72,7 @@ class CsvReportTest extends TestCase
             ['id' => 'php-version', 'category' => 'environment', 'result' => CheckResult::pass('8.3.1')],
             ['id' => 'database-version', 'category' => 'database', 'result' => CheckResult::warning('MariaDB 10.11', ['recommended' => '11.8.0', 'warningType' => 'below_recommended'])],
             ['id' => 'extension-compatibility', 'category' => 'extensions', 'result' => CheckResult::fail('1 / 3', ['extensions' => $extensions])],
-        ], CheckResult::FAIL, '2.0', 1790000000, 1789990000);
+        ], CheckResult::FAIL, '3.0', 1790000000, 1789990000);
     }
 
     #[Test]
@@ -165,8 +165,8 @@ class CsvReportTest extends TestCase
             'Action group' => 'switch_replacement',
             'Recommended action' => 'fof-upgrade-advisor.admin.hints.switch_replacement {"replacement":"blazite\/flarum-turnstile"}',
             'Replacement' => 'blazite/flarum-turnstile',
-            'Replacement 2.0-ready' => 'yes',
-            'Compatible 2.0 version' => '',
+            'Replacement ready' => 'yes',
+            'Compatible version' => '',
             'Latest version' => '',
             'Data source' => 'core',
             'Admin page' => 'https://example.com/admin#/extension/blomstra-turnstile',
@@ -177,6 +177,7 @@ class CsvReportTest extends TestCase
             'Checked at' => '2026-09-21T14:13:20+00:00',
             'Remote data as of' => '2026-09-21T11:26:40+00:00',
             'Readiness' => 'to_do',
+            'Target' => '3.0',
         ], $rows[2]);
     }
 
@@ -191,7 +192,7 @@ class CsvReportTest extends TestCase
         $this->assertSame('review', $row['Action group']);
         $this->assertSame('ready', $row['Readiness'], 'a recommendation is not a blocker');
         $this->assertSame(
-            'fof-upgrade-advisor.admin.checks.database-version.warning_below_recommended {"current":"MariaDB 10.11","required":"","recommended":"11.8.0"}',
+            'fof-upgrade-advisor.admin.checks.database-version.warning_below_recommended {"current":"MariaDB 10.11","required":"","recommended":"11.8.0","target":"3.0"}',
             $row['Recommended action']
         );
         $this->assertSame('', $row['Admin page']);
@@ -219,7 +220,7 @@ class CsvReportTest extends TestCase
     {
         $report = new Report([
             ['id' => 'php-version', 'category' => 'environment', 'result' => CheckResult::fail('8.1.0', ['required' => '8.3.0'])],
-        ], CheckResult::FAIL, '2.0', 1790000000, 1789990000);
+        ], CheckResult::FAIL, '3.0', 1790000000, 1789990000);
 
         $row = $this->csv()->rows($report, 'https://example.com/admin')[0];
 

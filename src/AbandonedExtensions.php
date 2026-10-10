@@ -13,8 +13,6 @@ namespace FoF\UpgradeAdvisor;
 
 use Flarum\Extension\AbandonedExtensionsFetcher;
 use Flarum\Settings\SettingsRepositoryInterface;
-use GuzzleHttp\Client;
-use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Container\Container;
 use Psr\Log\LoggerInterface;
 
@@ -22,20 +20,17 @@ use Psr\Log\LoggerInterface;
  * The flarum/abandoned-extensions list, which flags abandoned extensions (and
  * their replacements) that Packagist doesn't know about.
  *
- * Core 1.8.16+ syncs the list weekly into a setting, and the advisor reuses that
- * copy (asking core to re-sync on Refresh). Older cores don't know the list at
- * all, so the advisor fetches it itself.
+ * Core syncs the list weekly into a setting; the advisor reads that copy and
+ * asks core to re-sync on Refresh.
  */
 class AbandonedExtensions
 {
-    protected const SOURCE_URL = 'https://raw.githubusercontent.com/flarum/abandoned-extensions/main/abandoned.json';
-
     /**
      * @var array<string, mixed>|null
      */
     protected $map;
 
-    public function __construct(protected Container $container, protected SettingsRepositoryInterface $settings, protected Client $client, protected Cache $cache, protected LoggerInterface $log, protected CacheGeneration $generation)
+    public function __construct(protected Container $container, protected SettingsRepositoryInterface $settings, protected LoggerInterface $log)
     {
     }
 
@@ -48,7 +43,7 @@ class AbandonedExtensions
      */
     public function status(string $packageName)
     {
-        $map = $this->map();
+        $map = $this->map ??= AbandonedExtensionsFetcher::getCachedMap($this->settings);
 
         if (! isset($map[$packageName])) {
             return null;
@@ -59,17 +54,8 @@ class AbandonedExtensions
         return is_string($replacement) && $replacement !== '' ? $replacement : true;
     }
 
-    /**
-     * Bring the list up to date. On older cores there's nothing to do: the
-     * advisor's own copy lives in the generation cache, which Refresh has just
-     * invalidated.
-     */
     public function refresh(): void
     {
-        if (! $this->coreSyncAvailable()) {
-            return;
-        }
-
         try {
             // No notify: admins get core's weekly email; a Refresh shouldn't send one.
             $this->container->make(AbandonedExtensionsFetcher::class)->sync(false, false);
@@ -78,59 +64,5 @@ class AbandonedExtensions
         }
 
         $this->map = null;
-    }
-
-    protected function coreSyncAvailable(): bool
-    {
-        return class_exists(AbandonedExtensionsFetcher::class);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    protected function map(): array
-    {
-        if ($this->map === null) {
-            $this->map = $this->coreSyncAvailable() ? AbandonedExtensionsFetcher::getCachedMap($this->settings) : $this->fetch();
-        }
-
-        return $this->map;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    protected function fetch(): array
-    {
-        $key = $this->generation->key('abandoned');
-        $cached = $this->cache->get($key);
-
-        if (is_array($cached)) {
-            return $cached;
-        }
-
-        try {
-            $response = $this->client->get(self::SOURCE_URL, [
-                'allow_redirects' => false,
-                'timeout' => 10,
-                'connect_timeout' => 5,
-                'headers' => ['Accept' => 'application/json'],
-            ]);
-
-            $map = json_decode((string) $response->getBody(), true);
-        } catch (\Throwable $e) {
-            $this->log->info('[fof/upgrade-advisor] Failed to fetch the abandoned extensions list: '.$e->getMessage());
-
-            // Don't cache failures — retry on the next run.
-            return [];
-        }
-
-        if (! is_array($map)) {
-            return [];
-        }
-
-        $this->cache->put($key, $map, CacheGeneration::TTL);
-
-        return $map;
     }
 }

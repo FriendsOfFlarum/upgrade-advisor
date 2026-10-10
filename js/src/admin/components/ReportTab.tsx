@@ -62,12 +62,24 @@ export default class ReportTab extends Component {
       );
     }
 
+    if (this.report.overall() === 'latest') {
+      return (
+        <div className="UpgradeAdvisorPage-overall UpgradeAdvisorPage-overall--pass">
+          <div className="UpgradeAdvisorPage-overall-main">
+            <Icon name={STATUS_ICONS.pass} className="UpgradeAdvisorPage-overall-icon" />
+            <h3>{app.translator.trans('fof-upgrade-advisor.admin.latest.title')}</h3>
+          </div>
+          <p className="UpgradeAdvisorPage-latest">{app.translator.trans('fof-upgrade-advisor.admin.latest.description')}</p>
+        </div>
+      );
+    }
+
     const extensions = this.report.extensions();
 
     return (
       <div>
         {this.summary()}
-        <ExtensionCompatibilityList extensions={extensions} checks={this.report.otherChecks()} />
+        <ExtensionCompatibilityList extensions={extensions} checks={this.report.otherChecks()} target={this.report.target()!} />
       </div>
     );
   }
@@ -120,8 +132,9 @@ export default class ReportTab extends Component {
   headline(): { status: CheckStatus; text: Mithril.Children } {
     const report = this.report!;
     const extensions = report.extensions();
-    const version = report.flarumMajor();
-    const trans = (key: string, params: Record<string, any> = {}) => app.translator.trans(`fof-upgrade-advisor.admin.overall.${key}`, params);
+    const target = report.target();
+    const trans = (key: string, params: Record<string, any> = {}) =>
+      app.translator.trans(`fof-upgrade-advisor.admin.overall.${key}`, { target, ...params });
 
     const noPath = extensions.filter((ext) => ext.action === 'no_path').length;
     const tasks = extensions.filter((ext) => BLOCKING_ACTIONS.includes(ext.action) && ext.action !== 'no_path').length;
@@ -149,7 +162,7 @@ export default class ReportTab extends Component {
       return { status: 'warning', text: trans('unchecked_only', { count: unchecked }) };
     }
 
-    return { status: 'pass', text: trans('ready', { version }) };
+    return { status: 'pass', text: trans('ready') };
   }
 
   join(parts: Mithril.Children[]): Mithril.Children[] {

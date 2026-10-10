@@ -31,14 +31,11 @@ class ExtensionAction
     /** Abandoned, with a replacement that is (or may be) ready. */
     public const SWITCH_REPLACEMENT = 'switch_replacement';
 
-    /** No 2.0 release and no usable replacement: contact the author or go without. */
+    /** No release for the target and no usable replacement: contact the author or go without. */
     public const NO_PATH = 'no_path';
 
     /** Couldn't be looked up anywhere. */
     public const UNKNOWN = 'unknown';
-
-    /** The advisor itself: remove as the final step. */
-    public const REMOVE_LAST = 'remove_last';
 
     /**
      * In the order the UI and CSV present them: blockers, unchecked, to-dos, ready.
@@ -50,7 +47,6 @@ class ExtensionAction
         self::SWAP_AFTER_UPGRADE,
         self::SWITCH_REPLACEMENT,
         self::NONE,
-        self::REMOVE_LAST,
     ];
 
     /**
@@ -60,10 +56,6 @@ class ExtensionAction
     {
         switch ($entry['status']) {
             case 'superseded':
-                if ($entry['reason'] === SupersededExtensions::SELF) {
-                    return self::REMOVE_LAST;
-                }
-
                 return $entry['reason'] === SupersededExtensions::REPLACED ? self::SWAP_AFTER_UPGRADE : self::REMOVE;
 
             case 'abandoned':
@@ -86,12 +78,26 @@ class ExtensionAction
     /**
      * The translation key suffix (under `fof-upgrade-advisor.admin.hints.`) and
      * parameters describing what to do, shared by the admin UI and the CSV.
+     * Every hint gets a `target` parameter, the target's label (e.g. "3.0").
      *
      * @param array<string, mixed> $entry
      *
      * @return array{key: string, params: array<string, string>}
      */
-    public static function hint(array $entry): array
+    public static function hint(array $entry, string $target): array
+    {
+        $hint = self::describe($entry);
+        $hint['params']['target'] = $target;
+
+        return $hint;
+    }
+
+    /**
+     * @param array<string, mixed> $entry
+     *
+     * @return array{key: string, params: array<string, string>}
+     */
+    protected static function describe(array $entry): array
     {
         $action = self::for($entry);
         $replacement = ['replacement' => (string) $entry['replacement']];
@@ -159,6 +165,6 @@ class ExtensionAction
      */
     public static function isReady(string $action): bool
     {
-        return $action === self::NONE || $action === self::REMOVE_LAST;
+        return $action === self::NONE;
     }
 }

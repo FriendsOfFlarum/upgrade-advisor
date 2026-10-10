@@ -2,15 +2,20 @@ import Model from 'flarum/common/Model';
 
 export type CheckStatus = 'pass' | 'warning' | 'fail';
 
+/**
+ * 'latest' when the advisor is dormant: there is no target to check against.
+ */
+export type OverallStatus = CheckStatus | 'latest';
+
 export type ExtStatus = 'compatible' | 'incompatible' | 'unknown' | 'superseded' | 'abandoned';
 
 /**
  * Mirrors FoF\UpgradeAdvisor\ExtensionAction.
  */
-export type ExtAction = 'none' | 'remove' | 'swap_after_upgrade' | 'switch_replacement' | 'no_path' | 'unknown' | 'remove_last';
+export type ExtAction = 'none' | 'remove' | 'swap_after_upgrade' | 'switch_replacement' | 'no_path' | 'unknown';
 
 export const BLOCKING_ACTIONS: ExtAction[] = ['remove', 'swap_after_upgrade', 'switch_replacement', 'no_path'];
-export const READY_ACTIONS: ExtAction[] = ['none', 'remove_last'];
+export const READY_ACTIONS: ExtAction[] = ['none'];
 
 export interface ContactAuthor {
   name: string | null;
@@ -31,7 +36,7 @@ export interface ExtensionCompat {
   title: string;
   installedVersion: string | null;
   status: ExtStatus;
-  reason: 'into_core' | 'replaced' | 'self' | null;
+  reason: 'into_core' | 'replaced' | null;
   replacement: string | null;
   replacementCompatible: boolean | null;
   compatibleVersion: string | null;
@@ -52,11 +57,14 @@ export interface CheckData {
 
 export default class Report extends Model {
   overall() {
-    return Model.attribute<CheckStatus>('overall').call(this);
+    return Model.attribute<OverallStatus>('overall').call(this);
   }
 
-  flarumMajor() {
-    return Model.attribute<string>('flarumMajor').call(this);
+  /**
+   * The release being checked against, e.g. "3.0"; null while dormant.
+   */
+  target() {
+    return Model.attribute<string | null>('target').call(this);
   }
 
   checkedAt() {

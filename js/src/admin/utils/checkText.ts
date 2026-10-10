@@ -18,6 +18,7 @@ export function checkDescription(check: CheckData): string {
       current: check.current,
       required: check.meta.required,
       recommended: check.meta.recommended,
+      target: check.meta.target,
     })
   );
 }

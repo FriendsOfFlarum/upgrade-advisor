@@ -12,6 +12,7 @@
 namespace FoF\UpgradeAdvisor;
 
 use Flarum\Foundation\AbstractServiceProvider;
+use Flarum\Foundation\Application;
 use FoF\UpgradeAdvisor\Check\Checks\DatabaseVersionCheck;
 use FoF\UpgradeAdvisor\Check\Checks\ExtensionCompatibilityCheck;
 use FoF\UpgradeAdvisor\Check\Checks\PhpVersionCheck;
@@ -21,6 +22,16 @@ class UpgradeAdvisorServiceProvider extends AbstractServiceProvider
 {
     public function register()
     {
+        // The target being checked, or null while the advisor is dormant.
+        $this->container->singleton('fof-upgrade-advisor.target', function () {
+            return Targets::resolve(Targets::next(), Application::VERSION);
+        });
+
+        // Checks type-hint Target; they only run when one is set.
+        $this->container->bind(Target::class, function ($container) {
+            return $container->make('fof-upgrade-advisor.target');
+        });
+
         // The registry of check classes. The Checks extender appends to this,
         // and third-party extensions can register their own checks the same way.
         $this->container->singleton('fof-upgrade-advisor.checks', function () {
@@ -63,11 +74,6 @@ class UpgradeAdvisorServiceProvider extends AbstractServiceProvider
 
         $this->container
             ->when(Repository\ComposerRepository::class)
-            ->needs(Client::class)
-            ->give($clientFactory);
-
-        $this->container
-            ->when(AbandonedExtensions::class)
             ->needs(Client::class)
             ->give($clientFactory);
     }

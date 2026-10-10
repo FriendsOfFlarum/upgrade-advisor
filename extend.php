@@ -31,5 +31,4 @@ return [
         ->post('/fof/upgrade-advisor/report/refresh', 'fof.upgrade-advisor.report.refresh', Api\Controller\RefreshReportController::class)
         ->get('/fof/upgrade-advisor/report/export', 'fof.upgrade-advisor.report.export', Api\Controller\ExportReportCsvController::class)
         ->post('/fof/upgrade-advisor/test-repository', 'fof.upgrade-advisor.test-repository', Api\Controller\TestRepositoryController::class),
-    new Extend\ApiResource(Api\Resource\ReportResource::class),
 ];

@@ -13,10 +13,14 @@ namespace FoF\UpgradeAdvisor\Check\Checks;
 
 use FoF\UpgradeAdvisor\Check\Check;
 use FoF\UpgradeAdvisor\Check\CheckResult;
-use FoF\UpgradeAdvisor\Targets;
+use FoF\UpgradeAdvisor\Target;
 
 class PhpVersionCheck implements Check
 {
+    public function __construct(protected Target $target)
+    {
+    }
+
     public function id(): string
     {
         return 'php-version';
@@ -31,12 +35,12 @@ class PhpVersionCheck implements Check
     {
         $current = PHP_VERSION;
 
-        if (version_compare($current, Targets::PHP_MINIMUM, '>=')) {
+        if (version_compare($current, $this->target->phpMinimum, '>=')) {
             return CheckResult::pass($current);
         }
 
         return CheckResult::fail($current, [
-            'required' => Targets::PHP_MINIMUM,
+            'required' => $this->target->phpMinimum,
         ]);
     }
 }
