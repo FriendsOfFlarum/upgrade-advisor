@@ -1,6 +1,6 @@
 {
     "name": "fof/upgrade-advisor",
-    "description": "Check your forum's readiness for the next Flarum major version",
+    "description": "Check your forum's readiness for the next Flarum version",
     "keywords": [
         "flarum"
     ],
