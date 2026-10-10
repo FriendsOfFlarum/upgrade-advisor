@@ -12,6 +12,7 @@
 namespace FoF\UpgradeAdvisor\Tests\unit;
 
 use FoF\UpgradeAdvisor\Repository\ComposerRepository;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
@@ -26,14 +27,12 @@ class ComposerRepositoryTest extends TestCase
     protected function invoke(string $method, array $args)
     {
         $m = new ReflectionMethod(ComposerRepository::class, $method);
-        $m->setAccessible(true);
 
         return $m->invoke($this->repo(), ...$args);
     }
 
     // ---- expandMinified() ---------------------------------------------------
-
-    /** @test */
+    #[Test]
     public function expand_minified_carries_forward_unchanged_fields()
     {
         // Composer "composer/2.0" minified list: entry 0 is complete, later
@@ -54,7 +53,7 @@ class ComposerRepositoryTest extends TestCase
         $this->assertSame('1.9.0', $expanded[1]['version']);
     }
 
-    /** @test */
+    #[Test]
     public function expand_minified_applies_field_changes_in_later_entries()
     {
         $versions = [
@@ -68,7 +67,7 @@ class ComposerRepositoryTest extends TestCase
         $this->assertSame('^1.8', $expanded[1]['require']['flarum/core'], 'a redeclared field should override');
     }
 
-    /** @test */
+    #[Test]
     public function expand_minified_removes_fields_marked_unset()
     {
         $versions = [
@@ -84,8 +83,7 @@ class ComposerRepositoryTest extends TestCase
     }
 
     // ---- absoluteUrl() ------------------------------------------------------
-
-    /** @test */
+    #[Test]
     public function absolute_url_returns_fully_qualified_urls_unchanged()
     {
         $result = $this->invoke('absoluteUrl', ['https://repo.packagist.com/acme/', 'https://cdn.example.com/p2/%package%.json']);
@@ -93,7 +91,7 @@ class ComposerRepositoryTest extends TestCase
         $this->assertSame('https://cdn.example.com/p2/%package%.json', $result);
     }
 
-    /** @test */
+    #[Test]
     public function absolute_url_resolves_root_relative_against_scheme_and_host_only()
     {
         // metadata-url like "/acme/p2/%package%.json" is host-absolute: it must
@@ -104,7 +102,7 @@ class ComposerRepositoryTest extends TestCase
         $this->assertSame('https://repo.packagist.com/acme/p2/%package%.json', $result);
     }
 
-    /** @test */
+    #[Test]
     public function absolute_url_appends_path_relative_templates_to_the_repo_url()
     {
         $result = $this->invoke('absoluteUrl', ['https://repo.packagist.com/acme/', 'p2/%package%.json']);
@@ -113,8 +111,7 @@ class ComposerRepositoryTest extends TestCase
     }
 
     // ---- isDev() ------------------------------------------------------------
-
-    /** @test */
+    #[Test]
     public function is_dev_only_matches_dev_branch_versions_not_prereleases()
     {
         $this->assertTrue($this->invoke('isDev', ['dev-main']));

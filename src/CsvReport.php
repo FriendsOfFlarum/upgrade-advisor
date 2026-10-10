@@ -35,8 +35,8 @@ class CsvReport
         'Action group',
         'Recommended action',
         'Replacement',
-        'Replacement '.Targets::FLARUM_MAJOR.'-ready',
-        'Compatible '.Targets::FLARUM_MAJOR.' version',
+        'Replacement ready',
+        'Compatible version',
         'Latest version',
         'Data source',
         'Admin page',
@@ -48,6 +48,8 @@ class CsvReport
         'Remote data as of',
         // Appended, not inserted, so existing imports keyed by position still line up.
         'Readiness',
+        // The Flarum version the row was checked against, e.g. "3.0".
+        'Target',
     ];
 
     /**
@@ -59,14 +61,8 @@ class CsvReport
         CheckResult::FAIL => 'fix',
     ];
 
-    /**
-     * @var TranslatorInterface
-     */
-    protected $translator;
-
-    public function __construct(TranslatorInterface $translator)
+    public function __construct(protected TranslatorInterface $translator)
     {
-        $this->translator = $translator;
     }
 
     public static function filename(string $forumTitle, int $now): string
@@ -93,6 +89,7 @@ class CsvReport
         $common = [
             'Checked at' => gmdate('c', $report->checkedAt),
             'Remote data as of' => gmdate('c', $report->dataAsOf),
+            'Target' => (string) $report->target,
         ];
 
         $rows = [];
@@ -104,7 +101,7 @@ class CsvReport
                 continue;
             }
 
-            $rows[] = $this->checkRow($check['id'], $check['category'], $check['result']) + $common;
+            $rows[] = $this->checkRow($check['id'], $check['category'], $check['result'], (string) $report->target) + $common;
         }
 
         foreach ($this->sortByUrgency($extensions) as $extension) {
@@ -135,7 +132,7 @@ class CsvReport
     /**
      * @return array<string, string>
      */
-    protected function checkRow(string $id, string $category, CheckResult $result): array
+    protected function checkRow(string $id, string $category, CheckResult $result, string $target): array
     {
         $key = "fof-upgrade-advisor.admin.checks.$id";
 
@@ -155,6 +152,7 @@ class CsvReport
                 'current' => (string) $result->current,
                 'required' => (string) ($result->meta['required'] ?? ''),
                 'recommended' => (string) ($result->meta['recommended'] ?? ''),
+                'target' => $target,
             ]),
             // A warning is a recommendation, not a requirement; only a failure blocks.
             'Readiness' => $result->status === CheckResult::FAIL ? 'blocked' : 'ready',
@@ -187,8 +185,8 @@ class CsvReport
             'Action group' => (string) $ext['action'],
             'Recommended action' => $this->translator->trans('fof-upgrade-advisor.admin.hints.'.$ext['hint']['key'], $ext['hint']['params']),
             'Replacement' => (string) $ext['replacement'],
-            'Replacement '.Targets::FLARUM_MAJOR.'-ready' => $ext['replacementCompatible'] === null ? '' : ($ext['replacementCompatible'] ? 'yes' : 'no'),
-            'Compatible '.Targets::FLARUM_MAJOR.' version' => (string) $ext['compatibleVersion'],
+            'Replacement ready' => $ext['replacementCompatible'] === null ? '' : ($ext['replacementCompatible'] ? 'yes' : 'no'),
+            'Compatible version' => (string) $ext['compatibleVersion'],
             'Latest version' => (string) $ext['latestVersion'],
             'Data source' => (string) $ext['source'],
             'Admin page' => $adminUrl.'#/extension/'.$ext['id'],

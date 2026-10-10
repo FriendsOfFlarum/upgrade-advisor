@@ -15,6 +15,11 @@
     }
   }
 
+  &-latest {
+    margin: 0;
+    color: var(--muted-color);
+  }
+
   &-overall {
     display: flex;
     flex-direction: column;
@@ -50,11 +55,11 @@
     }
 
     &--pass {
-      border-left-color: @alert-success-color;
+      border-left-color: var(--alert-success-color);
     }
 
     &--pass &-icon {
-      color: @alert-success-color;
+      color: var(--alert-success-color);
     }
 
     &--warning {
@@ -66,11 +71,11 @@
     }
 
     &--fail {
-      border-left-color: @error-color;
+      border-left-color: var(--error-color);
     }
 
     &--fail &-icon {
-      color: @error-color;
+      color: var(--error-color);
     }
   }
 
@@ -97,7 +102,7 @@
     }
 
     &-key--ready::before {
-      background: @alert-success-color;
+      background: var(--alert-success-color);
     }
 
     &-key--tasks::before {
@@ -105,7 +110,7 @@
     }
 
     &-key--blocked::before {
-      background: @error-color;
+      background: var(--error-color);
     }
 
     &-key--unknown::before {
@@ -122,7 +127,7 @@
 
     &-segment {
       &--ready {
-        background: @alert-success-color;
+        background: var(--alert-success-color);
       }
 
       &--tasks {
@@ -130,7 +135,7 @@
       }
 
       &--blocked {
-        background: @error-color;
+        background: var(--error-color);
       }
 
       &--unknown {
@@ -162,7 +167,7 @@
     }
 
     &--pass .icon {
-      color: @alert-success-color;
+      color: var(--alert-success-color);
     }
 
     &--warning .icon {
@@ -170,7 +175,7 @@
     }
 
     &--fail .icon {
-      color: @error-color;
+      color: var(--error-color);
     }
   }
 
@@ -253,7 +258,7 @@
 
   &-group--decision &-groupIcon,
   &-group--environment &-groupIcon {
-    color: @error-color;
+    color: var(--error-color);
   }
 
   &-group--replace &-groupIcon {
@@ -261,7 +266,7 @@
   }
 
   &-group--ready &-groupIcon {
-    color: @alert-success-color;
+    color: var(--alert-success-color);
   }
 
   &-groupTitle {
@@ -310,12 +315,12 @@
 
   &-row--no_path &-detail,
   &-row--fail &-detail {
-    color: @error-color;
+    color: var(--error-color);
   }
 
   &-row--none &-detail .icon,
   &-ok {
-    color: @alert-success-color;
+    color: var(--alert-success-color);
   }
 
   &-contact {
@@ -391,13 +396,6 @@
       display: block;
     }
   }
-
-  &-final {
-    margin-top: 14px;
-    color: var(--muted-color);
-    font-size: 12px;
-    font-style: italic;
-  }
 }
 
 .UpgradeAdvisorRepos {
@@ -454,11 +452,11 @@
     font-weight: 600;
 
     &--ok {
-      color: @alert-success-color;
+      color: var(--alert-success-color);
     }
 
     &--fail {
-      color: @error-color;
+      color: var(--error-color);
     }
   }
 

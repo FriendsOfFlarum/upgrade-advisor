@@ -36,14 +36,8 @@ class CacheGeneration
     protected const GENERATION_KEY = 'fof-upgrade-advisor.generation';
     protected const REFRESHED_AT_KEY = 'fof-upgrade-advisor.refreshed_at';
 
-    /**
-     * @var Cache
-     */
-    protected $cache;
-
-    public function __construct(Cache $cache)
+    public function __construct(protected Cache $cache)
     {
-        $this->cache = $cache;
     }
 
     public function key(string $suffix): string

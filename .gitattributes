@@ -9,6 +9,7 @@
 
 **/phpunit.xml export-ignore
 **/tests export-ignore
+/MAINTAINING.md export-ignore
 
 **/js/dist/**/* -diff
 **/js/dist/**/* linguist-generated

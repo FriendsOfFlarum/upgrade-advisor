@@ -41,34 +41,10 @@ class ComposerRepository
      * every version of every package (can be 100+ MB). Per-package p2 documents
      * are always well under this.
      */
-    protected const MAX_DECODE_BYTES = 8388608; // 8 MB
+    protected const MAX_DECODE_BYTES = 8388608;
 
-    /**
-     * @var Client
-     */
-    protected $client;
-
-    /**
-     * @var Cache
-     */
-    protected $cache;
-
-    /**
-     * @var CacheGeneration
-     */
-    protected $generation;
-
-    /**
-     * @var LoggerInterface
-     */
-    protected $log;
-
-    public function __construct(Client $client, Cache $cache, LoggerInterface $log, CacheGeneration $generation)
+    public function __construct(protected Client $client, protected Cache $cache, protected LoggerInterface $log, protected CacheGeneration $generation)
     {
-        $this->generation = $generation;
-        $this->client = $client;
-        $this->cache = $cache;
-        $this->log = $log;
     }
 
     /**

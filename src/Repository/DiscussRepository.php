@@ -20,8 +20,8 @@ use Psr\Log\LoggerInterface;
  * Reads compatibility signals from an extension's official support discussion on
  * discuss.flarum.org.
  *
- * The Flarum community tags extension discussions with version tags
- * ("version-1x", "version-2x") and an "abandoned" tag, maintained by the discuss
+ * The Flarum community tags extension discussions with a tag per supported major
+ * ("version-1x", "version-2x", ...) and an "abandoned" tag, maintained by the discuss
  * moderators and/or the extension author. These are treated as authoritative.
  */
 class DiscussRepository
@@ -29,29 +29,13 @@ class DiscussRepository
     protected const HOST = 'discuss.flarum.org';
     protected const API_URL = 'https://discuss.flarum.org/api/discussions/%s?include=tags';
 
-    protected const TAG_1X = 'version-1x';
-    protected const TAG_2X = 'version-2x';
+    protected const VERSION_TAG = '/^version-(\d+)x$/';
     protected const TAG_ABANDONED = 'abandoned';
 
     /**
      * How long to cache a discussion's tags, in seconds.
      */
     protected const CACHE_TTL = CacheGeneration::TTL;
-
-    /**
-     * @var Client
-     */
-    protected $client;
-
-    /**
-     * @var Cache
-     */
-    protected $cache;
-
-    /**
-     * @var CacheGeneration
-     */
-    protected $generation;
 
     /**
      * Tag slugs fetched during this request, by discussion id; null marks a
@@ -61,17 +45,8 @@ class DiscussRepository
      */
     protected $fetched = [];
 
-    /**
-     * @var LoggerInterface
-     */
-    protected $log;
-
-    public function __construct(Client $client, Cache $cache, LoggerInterface $log, CacheGeneration $generation)
+    public function __construct(protected Client $client, protected Cache $cache, protected LoggerInterface $log, protected CacheGeneration $generation)
     {
-        $this->generation = $generation;
-        $this->client = $client;
-        $this->cache = $cache;
-        $this->log = $log;
     }
 
     /**
@@ -111,8 +86,9 @@ class DiscussRepository
     /**
      * Resolve the compatibility signals for a package's support.forum URL.
      *
-     * @return array{abandoned: bool, has1x: bool, has2x: bool}|null
-     *                                                               Null when the URL isn't a discuss.flarum.org thread or couldn't be read.
+     * @return array{abandoned: bool, majors: int[]}|null The Flarum majors the thread is tagged as
+     *                                                    supporting, ascending. Null when the URL isn't a
+     *                                                    discuss.flarum.org thread or couldn't be read.
      */
     public function signals(?string $supportForumUrl): ?array
     {
@@ -128,10 +104,19 @@ class DiscussRepository
             return null;
         }
 
+        $majors = [];
+
+        foreach ($slugs as $slug) {
+            if (preg_match(self::VERSION_TAG, $slug, $matches) === 1) {
+                $majors[] = (int) $matches[1];
+            }
+        }
+
+        sort($majors);
+
         return [
             'abandoned' => in_array(self::TAG_ABANDONED, $slugs, true),
-            'has1x' => in_array(self::TAG_1X, $slugs, true),
-            'has2x' => in_array(self::TAG_2X, $slugs, true),
+            'majors' => $majors,
         ];
     }
 

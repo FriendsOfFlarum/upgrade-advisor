@@ -1,6 +1,6 @@
 {
     "name": "fof/upgrade-advisor",
-    "description": "Check your forum's readiness for the next Flarum major version",
+    "description": "Check your forum's readiness for the next Flarum version",
     "keywords": [
         "flarum"
     ],
@@ -12,7 +12,7 @@
         "issues": "https://github.com/FriendsOfFlarum/upgrade-advisor/issues"
     },
     "require": {
-        "flarum/core": "^1.8.0",
+        "flarum/core": "^2.0.0",
         "composer/semver": "^3.4"
     },
     "authors": [
@@ -56,7 +56,7 @@
             }
         }
     },
-    "minimum-stability": "dev",
+    "minimum-stability": "beta",
     "prefer-stable": true,
     "autoload-dev": {
         "psr-4": {
@@ -82,7 +82,7 @@
         "analyse:phpstan": "Run static analysis"
     },
     "require-dev": {
-        "flarum/testing": "^1.8.0",
-        "flarum/phpstan": "^1.8.0"
+        "flarum/testing": "^2.0.0",
+        "flarum/phpstan": "^2.0.0"
     }
 }

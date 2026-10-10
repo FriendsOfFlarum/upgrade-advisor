@@ -11,13 +11,12 @@
 
 namespace FoF\UpgradeAdvisor\Api\Controller;
 
-use Flarum\Http\RequestUtil;
 use FoF\UpgradeAdvisor\AbandonedExtensions;
 use FoF\UpgradeAdvisor\CacheGeneration;
 use FoF\UpgradeAdvisor\Check\CheckRegistry;
 use FoF\UpgradeAdvisor\Report;
-use Psr\Http\Message\ServerRequestInterface;
-use Tobscure\JsonApi\Document;
+use FoF\UpgradeAdvisor\Target;
+use Illuminate\Contracts\Container\Container;
 
 /**
  * Re-runs the report with fresh remote lookups. Within the cooldown the
@@ -25,32 +24,21 @@ use Tobscure\JsonApi\Document;
  */
 class RefreshReportController extends ShowReportController
 {
-    /**
-     * @var AbandonedExtensions
-     */
-    protected $abandoned;
-
-    public function __construct(CheckRegistry $registry, CacheGeneration $generation, AbandonedExtensions $abandoned)
+    public function __construct(CheckRegistry $registry, CacheGeneration $generation, Container $container, protected AbandonedExtensions $abandoned)
     {
-        parent::__construct($registry, $generation);
-
-        $this->abandoned = $abandoned;
+        parent::__construct($registry, $generation, $container);
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function data(ServerRequestInterface $request, Document $document)
+    protected function report(?Target $target): Report
     {
-        RequestUtil::getActor($request)->assertAdmin();
-
         $now = time();
 
-        // Inside the cooldown nothing is refetched, including the abandoned list.
-        if ($this->generation->refresh($now)) {
+        // Dormant, there is nothing to refetch. Inside the cooldown nothing is
+        // refetched either, including the abandoned list.
+        if ($target !== null && $this->generation->refresh($now)) {
             $this->abandoned->refresh();
         }
 
-        return Report::build($this->registry, $this->generation, $now);
+        return Report::build($this->registry, $this->generation, $now, $target);
     }
 }

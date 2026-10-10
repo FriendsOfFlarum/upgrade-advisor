@@ -4,7 +4,7 @@ import Button from 'flarum/common/components/Button';
 import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
 import Alert from 'flarum/common/components/Alert';
 import Tooltip from 'flarum/common/components/Tooltip';
-import icon from 'flarum/common/helpers/icon';
+import Icon from 'flarum/common/components/Icon';
 import humanTime from 'flarum/common/utils/humanTime';
 import extractText from 'flarum/common/utils/extractText';
 import type Mithril from 'mithril';
@@ -62,12 +62,24 @@ export default class ReportTab extends Component {
       );
     }
 
+    if (this.report.overall() === 'latest') {
+      return (
+        <div className="UpgradeAdvisorPage-overall UpgradeAdvisorPage-overall--pass">
+          <div className="UpgradeAdvisorPage-overall-main">
+            <Icon name={STATUS_ICONS.pass} className="UpgradeAdvisorPage-overall-icon" />
+            <h3>{app.translator.trans('fof-upgrade-advisor.admin.latest.title')}</h3>
+          </div>
+          <p className="UpgradeAdvisorPage-latest">{app.translator.trans('fof-upgrade-advisor.admin.latest.description')}</p>
+        </div>
+      );
+    }
+
     const extensions = this.report.extensions();
 
     return (
       <div>
         {this.summary()}
-        <ExtensionCompatibilityList extensions={extensions} checks={this.report.otherChecks()} />
+        <ExtensionCompatibilityList extensions={extensions} checks={this.report.otherChecks()} target={this.report.target()!} />
       </div>
     );
   }
@@ -91,7 +103,7 @@ export default class ReportTab extends Component {
     return (
       <div className={`UpgradeAdvisorPage-overall UpgradeAdvisorPage-overall--${headline.status}`}>
         <div className="UpgradeAdvisorPage-overall-main">
-          {icon(STATUS_ICONS[headline.status], { className: 'UpgradeAdvisorPage-overall-icon' })}
+          <Icon name={STATUS_ICONS[headline.status]} className="UpgradeAdvisorPage-overall-icon" />
           <h3>{headline.text}</h3>
           {total > 0 && (
             <div className="UpgradeAdvisorPage-progress">
@@ -104,7 +116,6 @@ export default class ReportTab extends Component {
             </div>
           )}
         </div>
-
         <div className="UpgradeAdvisorPage-overall-footer">
           <div className="UpgradeAdvisorPage-chips">{report.otherChecks().map((check) => this.chip(check))}</div>
           {this.toolbar()}
@@ -121,8 +132,9 @@ export default class ReportTab extends Component {
   headline(): { status: CheckStatus; text: Mithril.Children } {
     const report = this.report!;
     const extensions = report.extensions();
-    const version = report.flarumMajor();
-    const trans = (key: string, params: Record<string, any> = {}) => app.translator.trans(`fof-upgrade-advisor.admin.overall.${key}`, params);
+    const target = report.target();
+    const trans = (key: string, params: Record<string, any> = {}) =>
+      app.translator.trans(`fof-upgrade-advisor.admin.overall.${key}`, { target, ...params });
 
     const noPath = extensions.filter((ext) => ext.action === 'no_path').length;
     const tasks = extensions.filter((ext) => BLOCKING_ACTIONS.includes(ext.action) && ext.action !== 'no_path').length;
@@ -150,7 +162,7 @@ export default class ReportTab extends Component {
       return { status: 'warning', text: trans('unchecked_only', { count: unchecked }) };
     }
 
-    return { status: 'pass', text: trans('ready', { version }) };
+    return { status: 'pass', text: trans('ready') };
   }
 
   join(parts: Mithril.Children[]): Mithril.Children[] {
@@ -189,7 +201,7 @@ export default class ReportTab extends Component {
     return (
       <Tooltip text={checkDescription(check)}>
         <span className={`UpgradeAdvisorPage-chip UpgradeAdvisorPage-chip--${check.status}`} tabindex="0">
-          {icon(STATUS_ICONS[check.status])}
+          <Icon name={STATUS_ICONS[check.status]} />
           {checkChip(check)}
           {recommended && (
             <span className="UpgradeAdvisorPage-chip-note">
@@ -215,7 +227,8 @@ export default class ReportTab extends Component {
             <Tooltip text={extractText(app.translator.trans('fof-upgrade-advisor.admin.summary.data_as_of_help'))}>
               <span tabindex="0">
                 {' · '}
-                {app.translator.trans('fof-upgrade-advisor.admin.summary.data_as_of', { time: humanTime(dataAsOf) })} {icon('fas fa-info-circle')}
+                {app.translator.trans('fof-upgrade-advisor.admin.summary.data_as_of', { time: humanTime(dataAsOf) })}{' '}
+                <Icon name="fas fa-info-circle" />
               </span>
             </Tooltip>
           )}
@@ -226,7 +239,7 @@ export default class ReportTab extends Component {
             : app.translator.trans('fof-upgrade-advisor.admin.summary.refresh')}
         </Button>
         <a className="Button" href={`${app.forum.attribute('apiUrl')}/fof/upgrade-advisor/report/export`} download>
-          {icon('fas fa-file-csv', { className: 'Button-icon' })}
+          <Icon name="fas fa-file-csv" className="Button-icon" />
           <span className="Button-label">{app.translator.trans('fof-upgrade-advisor.admin.summary.export')}</span>
         </a>
       </div>

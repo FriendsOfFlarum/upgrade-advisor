@@ -12,14 +12,14 @@
 namespace FoF\UpgradeAdvisor\Tests\unit;
 
 use FoF\UpgradeAdvisor\CoreConstraint;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 class CoreConstraintTest extends TestCase
 {
-    /**
-     * @dataProvider constraints
-     * @test
-     */
+    #[Test]
+    #[DataProvider('constraints')]
     public function decides_whether_a_flarum_core_constraint_targets_2_0(string $constraint, bool $expected)
     {
         $this->assertSame($expected, CoreConstraint::supports($constraint, '2.0.0'));

@@ -12,6 +12,8 @@
 namespace FoF\UpgradeAdvisor\Tests\unit;
 
 use FoF\UpgradeAdvisor\ExtensionAction;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Yaml\Yaml;
 
@@ -32,10 +34,8 @@ class ExtensionActionTest extends TestCase
         ], $overrides);
     }
 
-    /**
-     * @dataProvider entries
-     * @test
-     */
+    #[Test]
+    #[DataProvider('entries')]
     public function classifies_each_entry_into_an_action_group(array $overrides, string $expected)
     {
         $this->assertSame($expected, ExtensionAction::for($this->entry($overrides)));
@@ -47,7 +47,6 @@ class ExtensionActionTest extends TestCase
             'compatible' => [['status' => 'compatible'], ExtensionAction::NONE],
             'built into core' => [['status' => 'superseded', 'reason' => 'into_core'], ExtensionAction::REMOVE],
             'replaced by another package' => [['status' => 'superseded', 'reason' => 'replaced', 'replacement' => 'flarum/realtime'], ExtensionAction::SWAP_AFTER_UPGRADE],
-            'the advisor itself' => [['status' => 'superseded', 'reason' => 'self'], ExtensionAction::REMOVE_LAST],
             'abandoned, replacement ready' => [['status' => 'abandoned', 'replacement' => 'blazite/flarum-turnstile', 'replacementCompatible' => true], ExtensionAction::SWITCH_REPLACEMENT],
             'abandoned, replacement readiness unknown' => [['status' => 'abandoned', 'replacement' => 'acme/foo', 'replacementCompatible' => null], ExtensionAction::SWITCH_REPLACEMENT],
             'abandoned, replacement not ready' => [['status' => 'abandoned', 'replacement' => 'acme/foo', 'replacementCompatible' => false], ExtensionAction::NO_PATH],
@@ -57,7 +56,7 @@ class ExtensionActionTest extends TestCase
         ];
     }
 
-    /** @test */
+    #[Test]
     public function only_pre_upgrade_work_counts_as_blocking()
     {
         $blocking = array_filter(ExtensionAction::ALL, [ExtensionAction::class, 'isBlocking']);
@@ -71,22 +70,19 @@ class ExtensionActionTest extends TestCase
         ], array_values($blocking));
     }
 
-    /** @test */
+    #[Test]
     public function ready_means_nothing_to_do_before_upgrading()
     {
         $this->assertTrue(ExtensionAction::isReady(ExtensionAction::NONE));
-        $this->assertTrue(ExtensionAction::isReady(ExtensionAction::REMOVE_LAST));
         $this->assertFalse(ExtensionAction::isReady(ExtensionAction::UNKNOWN));
         $this->assertFalse(ExtensionAction::isReady(ExtensionAction::REMOVE));
     }
 
-    /**
-     * @dataProvider hints
-     * @test
-     */
+    #[Test]
+    #[DataProvider('hints')]
     public function picks_a_hint_and_its_parameters_for_each_entry(array $overrides, string $key, array $params)
     {
-        $this->assertSame(['key' => $key, 'params' => $params], ExtensionAction::hint($this->entry($overrides)));
+        $this->assertSame(['key' => $key, 'params' => $params + ['target' => '3.0']], ExtensionAction::hint($this->entry($overrides), '3.0'));
     }
 
     public static function hints(): array
@@ -96,7 +92,6 @@ class ExtensionActionTest extends TestCase
             'compatible per discuss tag only' => [['status' => 'compatible', 'compatibleVersion' => null], 'none_unversioned', []],
             'built into core' => [['status' => 'superseded', 'reason' => 'into_core'], 'remove', []],
             'replaced' => [['status' => 'superseded', 'reason' => 'replaced', 'replacement' => 'flarum/realtime'], 'swap_after_upgrade', ['replacement' => 'flarum/realtime']],
-            'the advisor itself' => [['status' => 'superseded', 'reason' => 'self'], 'remove_last', []],
             'abandoned, replacement ready' => [['status' => 'abandoned', 'replacement' => 'acme/new', 'replacementCompatible' => true], 'switch_replacement', ['replacement' => 'acme/new']],
             'abandoned, replacement unverified' => [['status' => 'abandoned', 'replacement' => 'acme/new', 'replacementCompatible' => null], 'switch_replacement_unverified', ['replacement' => 'acme/new']],
             'abandoned, replacement not ready' => [['status' => 'abandoned', 'replacement' => 'acme/new', 'replacementCompatible' => false], 'no_path_replacement_not_ready', ['replacement' => 'acme/new']],
@@ -107,19 +102,19 @@ class ExtensionActionTest extends TestCase
         ];
     }
 
-    /** @test */
+    #[Test]
     public function every_hint_has_an_english_translation()
     {
         $translations = Yaml::parseFile(__DIR__.'/../../locale/en.yml')['fof-upgrade-advisor']['admin']['hints'];
 
         foreach (self::hints() as $name => [$overrides]) {
-            $key = ExtensionAction::hint($this->entry($overrides))['key'];
+            $key = ExtensionAction::hint($this->entry($overrides), '3.0')['key'];
 
             $this->assertArrayHasKey($key, $translations, "Missing translation for hint '$key' ($name)");
         }
     }
 
-    /** @test */
+    #[Test]
     public function each_action_maps_to_the_readiness_bucket_shown_in_the_header()
     {
         $this->assertSame([
@@ -129,7 +124,6 @@ class ExtensionActionTest extends TestCase
             ExtensionAction::SWAP_AFTER_UPGRADE => 'to_do',
             ExtensionAction::SWITCH_REPLACEMENT => 'to_do',
             ExtensionAction::NONE => 'ready',
-            ExtensionAction::REMOVE_LAST => 'ready',
         ], array_combine(ExtensionAction::ALL, array_map([ExtensionAction::class, 'readiness'], ExtensionAction::ALL)));
     }
 }

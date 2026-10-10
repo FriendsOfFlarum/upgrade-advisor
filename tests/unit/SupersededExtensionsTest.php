@@ -12,59 +12,30 @@
 namespace FoF\UpgradeAdvisor\Tests\unit;
 
 use FoF\UpgradeAdvisor\SupersededExtensions;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 class SupersededExtensionsTest extends TestCase
 {
-    /** @test */
-    public function returns_null_for_a_package_not_in_the_map()
+    /**
+     * The 1.x curated entries (nightmode, fontawesome, realtime, ...) all
+     * described the move to 2.0. When waking the advisor for a new target,
+     * add that target's entries to the map and update this test.
+     */
+    #[Test]
+    public function this_release_ships_no_curated_entries()
     {
-        $this->assertNull(SupersededExtensions::lookup('acme/not-listed'));
+        $this->assertSame([], (new SupersededExtensions())->all());
     }
 
-    /** @test */
-    public function flags_into_core_extensions_with_no_replacement()
+    #[Test]
+    public function the_advisor_is_not_superseded()
     {
-        foreach (['fof/nightmode', 'blomstra/fontawesome', 'blomstra/database-queue', 'flarum-com/database-queue'] as $package) {
-            $result = SupersededExtensions::lookup($package);
-
-            $this->assertNotNull($result, "$package should be in the superseded map");
-            $this->assertSame(SupersededExtensions::INTO_CORE, $result['reason'], "$package should be into_core");
-            $this->assertNull($result['replacement'], "$package should have no replacement");
-        }
+        $this->assertNull((new SupersededExtensions())->get('fof/upgrade-advisor'));
     }
 
-    /** @test */
-    public function flags_replaced_extensions_with_their_replacement()
-    {
-        $result = SupersededExtensions::lookup('blomstra/realtime');
-
-        $this->assertNotNull($result);
-        $this->assertSame(SupersededExtensions::REPLACED, $result['reason']);
-        $this->assertSame('flarum/realtime', $result['replacement']);
-    }
-
-    /** @test */
-    public function flags_the_advisor_itself_with_the_self_reason()
-    {
-        $result = SupersededExtensions::lookup('fof/upgrade-advisor');
-
-        $this->assertNotNull($result);
-        $this->assertSame(SupersededExtensions::SELF, $result['reason']);
-        $this->assertNull($result['replacement']);
-    }
-
-    /** @test */
-    public function lookup_result_always_has_reason_and_replacement_keys()
-    {
-        $result = SupersededExtensions::lookup('fof/nightmode');
-
-        $this->assertArrayHasKey('reason', $result);
-        $this->assertArrayHasKey('replacement', $result);
-    }
-
-    /** @test */
-    public function extender_mappings_are_merged_over_the_curated_map()
+    #[Test]
+    public function extender_mappings_are_looked_up_by_package()
     {
         $superseded = new SupersededExtensions([
             'acme/translate' => [
@@ -77,31 +48,9 @@ class SupersededExtensionsTest extends TestCase
             'reason' => SupersededExtensions::REPLACED,
             'replacement' => 'acme/translate-next',
         ], $superseded->get('acme/translate'));
-
-        // The curated entries are still present.
-        $this->assertSame([
-            'reason' => SupersededExtensions::REPLACED,
-            'replacement' => 'flarum/realtime',
-        ], $superseded->get('blomstra/realtime'));
     }
 
-    /** @test */
-    public function extender_mappings_take_precedence_over_a_curated_entry()
-    {
-        $superseded = new SupersededExtensions([
-            'blomstra/realtime' => [
-                'reason' => SupersededExtensions::REPLACED,
-                'replacement' => 'acme/realtime-fork',
-            ],
-        ]);
-
-        $this->assertSame([
-            'reason' => SupersededExtensions::REPLACED,
-            'replacement' => 'acme/realtime-fork',
-        ], $superseded->get('blomstra/realtime'));
-    }
-
-    /** @test */
+    #[Test]
     public function an_extender_entry_without_a_replacement_reports_null()
     {
         $superseded = new SupersededExtensions([
@@ -114,14 +63,14 @@ class SupersededExtensionsTest extends TestCase
         ], $superseded->get('acme/nightmode'));
     }
 
-    /** @test */
-    public function unknown_packages_are_still_null_on_an_instance()
+    #[Test]
+    public function unknown_packages_are_null()
     {
         $this->assertNull((new SupersededExtensions())->get('acme/not-listed'));
     }
 
-    /** @test */
-    public function all_returns_curated_and_extender_entries()
+    #[Test]
+    public function all_returns_the_extender_entries()
     {
         $all = (new SupersededExtensions([
             'acme/translate' => [
@@ -130,7 +79,6 @@ class SupersededExtensionsTest extends TestCase
             ],
         ]))->all();
 
-        $this->assertArrayHasKey('acme/translate', $all);
-        $this->assertArrayHasKey('fof/nightmode', $all);
+        $this->assertSame(['acme/translate'], array_keys($all));
     }
 }

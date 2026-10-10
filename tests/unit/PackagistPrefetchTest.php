@@ -22,6 +22,7 @@ use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Repository;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
@@ -69,7 +70,7 @@ class PackagistPrefetchTest extends TestCase
         return $paths;
     }
 
-    /** @test */
+    #[Test]
     public function prefetching_fetches_every_package_once_so_lookups_need_no_further_requests()
     {
         $repo = $this->repo();
@@ -85,7 +86,7 @@ class PackagistPrefetchTest extends TestCase
         $this->assertSame(['/p2/acme/one.json', '/p2/acme/two.json'], $this->requestedPaths());
     }
 
-    /** @test */
+    #[Test]
     public function a_failed_package_does_not_break_the_others_and_is_not_retried_in_the_same_run()
     {
         $repo = $this->repo();
@@ -101,7 +102,7 @@ class PackagistPrefetchTest extends TestCase
         $this->assertCount(2, $this->history, 'the failed package must not be fetched again one at a time');
     }
 
-    /** @test */
+    #[Test]
     public function already_cached_and_duplicate_packages_are_not_fetched_again()
     {
         $repo = $this->repo();
@@ -113,7 +114,7 @@ class PackagistPrefetchTest extends TestCase
         $this->assertSame(['/p2/acme/one.json', '/p2/acme/two.json'], $this->requestedPaths());
     }
 
-    /** @test */
+    #[Test]
     public function an_open_ended_constraint_from_before_2_0_is_not_compatible()
     {
         $repo = $this->repo();
