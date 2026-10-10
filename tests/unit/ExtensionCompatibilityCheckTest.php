@@ -37,17 +37,19 @@ class ExtensionCompatibilityCheckTest extends TestCase
      * @param array<string, array{status: string, compatible_version?: ?string, latest_version?: ?string}> $private   Packages in one configured private repository.
      * @param array<string, string|true>                                                                  $abandoned Entries on the flarum/abandoned-extensions list.
      * @param array<string, string|true>                                                                  $composerAbandoned Packages whose own composer metadata marks them abandoned.
+     * @param array<string, array<string, mixed>>                                                         $installedJson     Extra fields in a package's installed.json entry.
+     * @param bool                                                                                        $oldCore           Simulate core before 1.8.12, which has no Extension::getAbandoned().
      */
-    protected function check(array $packagist, array $superseded = [], array $private = [], array $abandoned = [], array $composerAbandoned = []): ExtensionCompatibilityCheck
+    protected function check(array $packagist, array $superseded = [], array $private = [], array $abandoned = [], array $composerAbandoned = [], array $installedJson = [], bool $oldCore = false): ExtensionCompatibilityCheck
     {
         $extensions = [];
 
         foreach (array_keys($packagist) as $name) {
-            $extension = new Extension('/tmp/'.$name, [
+            $extension = new Extension('/tmp/'.$name, array_merge([
                 'name' => $name,
                 'version' => '1.0.0',
                 'extra' => ['flarum-extension' => ['title' => $name]],
-            ]);
+            ], $installedJson[$name] ?? []));
 
             if (isset($composerAbandoned[$name])) {
                 $extension->setAbandoned($composerAbandoned[$name]);
@@ -86,15 +88,18 @@ class ExtensionCompatibilityCheckTest extends TestCase
 
         $this->addToAssertionCount(2); // the once() expectations above, verified in tearDown
 
-        return new ExtensionCompatibilityCheck(
-            $manager,
-            $packagistRepo,
-            $discuss,
-            $repositories,
-            $composer,
-            new SupersededExtensions($superseded),
-            $abandonedList
-        );
+        $args = [$manager, $packagistRepo, $discuss, $repositories, $composer, new SupersededExtensions($superseded), $abandonedList];
+
+        if (! $oldCore) {
+            return new ExtensionCompatibilityCheck(...$args);
+        }
+
+        return new class(...$args) extends ExtensionCompatibilityCheck {
+            protected function coreReportsAbandoned(Extension $extension): bool
+            {
+                return false;
+            }
+        };
     }
 
     /** @test */
@@ -230,5 +235,55 @@ class ExtensionCompatibilityCheckTest extends TestCase
             'acme/flagged' => 'composer_abandoned',
             'acme/ready' => 'packagist',
         ], $sources);
+    }
+
+    /** @test */
+    public function on_core_before_1_8_12_abandoned_status_comes_from_installed_json()
+    {
+        $result = $this->check(
+            [
+                'acme/replaced' => ['status' => 'incompatible'],
+                'acme/dead' => ['status' => 'incompatible'],
+                'acme/ready' => ['status' => 'compatible', 'compatible_version' => '2.0.0'],
+            ],
+            [],
+            [],
+            [],
+            [],
+            [
+                'acme/replaced' => ['abandoned' => 'acme/replaced-next'],
+                'acme/dead' => ['abandoned' => true],
+            ],
+            true
+        )->run();
+
+        $entries = array_column($result->meta['extensions'], null, 'name');
+
+        $this->assertSame('abandoned', $entries['acme/replaced']['status']);
+        $this->assertSame('acme/replaced-next', $entries['acme/replaced']['replacement']);
+        $this->assertSame('composer_abandoned', $entries['acme/replaced']['source']);
+
+        $this->assertSame('abandoned', $entries['acme/dead']['status']);
+        $this->assertNull($entries['acme/dead']['replacement']);
+
+        $this->assertSame('compatible', $entries['acme/ready']['status']);
+    }
+
+    /** @test */
+    public function on_core_before_1_8_12_flarum_marketplace_abandoned_flags_are_ignored_as_core_does()
+    {
+        // Packages from flarum.org/composer can carry an unreliable `abandoned: true`;
+        // core 1.8.12+ skips those, so the fallback must too.
+        $result = $this->check(
+            ['acme/premium' => ['status' => 'compatible', 'compatible_version' => '2.0.0']],
+            [],
+            [],
+            [],
+            [],
+            ['acme/premium' => ['abandoned' => true, 'dist' => ['url' => 'https://flarum.org/composer/dists/acme/premium.zip']]],
+            true
+        )->run();
+
+        $this->assertSame('compatible', $result->meta['extensions'][0]['status']);
     }
 }

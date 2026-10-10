@@ -223,10 +223,10 @@ class ExtensionCompatibilityCheck implements Check
 
         // 2a. Abandoned status (authoritative, includes replacement): the
         // flarum/abandoned-extensions list first, as core does, then composer's
-        // abandoned field via core. Both give true (no replacement) or the
-        // replacement package name; getAbandoned() gives false when neither applies.
+        // abandoned field. Both give true (no replacement) or the replacement
+        // package name; composerAbandoned() gives false when neither applies.
         $listed = $this->abandoned !== null ? $this->abandoned->status($packageName) : null;
-        $abandoned = $listed !== null ? $listed : $extension->getAbandoned();
+        $abandoned = $listed !== null ? $listed : $this->composerAbandoned($extension);
         $abandonedSource = $listed !== null ? 'abandoned_list' : 'composer_abandoned';
 
         if ($abandoned !== false) {
@@ -404,6 +404,45 @@ class ExtensionCompatibilityCheck implements Check
         }
 
         return null;
+    }
+
+    /**
+     * Composer's abandoned flag for an installed extension.
+     *
+     * Core 1.8.12+ exposes it as Extension::getAbandoned(). Older cores don't,
+     * but they build each Extension from its vendor/composer/installed.json
+     * entry, which carries the same field, so read it there with core's rules.
+     *
+     * @return string|bool False if not abandoned, true if abandoned with no
+     *                     replacement, or the replacement package name.
+     */
+    protected function composerAbandoned(Extension $extension)
+    {
+        if ($this->coreReportsAbandoned($extension)) {
+            return $extension->getAbandoned();
+        }
+
+        $abandoned = $extension->composerJsonAttribute('abandoned');
+
+        if (is_string($abandoned) && $abandoned !== '') {
+            return $abandoned;
+        }
+
+        if ($abandoned === true) {
+            // As core does: packages from flarum.org/composer may carry an
+            // unreliable abandoned flag, so only trust it from elsewhere.
+            return strpos((string) $extension->composerJsonAttribute('dist.url'), 'flarum.org/composer') === false;
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether core provides Extension::getAbandoned() (added in 1.8.12).
+     */
+    protected function coreReportsAbandoned(Extension $extension): bool
+    {
+        return method_exists($extension, 'getAbandoned');
     }
 
     /**
