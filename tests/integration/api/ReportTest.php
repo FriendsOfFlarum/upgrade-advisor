@@ -152,9 +152,17 @@ class ReportTest extends TestCase
         $response = $this->send($this->request('GET', '/api/fof/upgrade-advisor/report', ['authenticatedAs' => 1]));
         $check = json_decode((string) $response->getBody(), true)['data']['attributes']['checks'][0];
 
-        // The test database may be MySQL or MariaDB; either way it must be named and versioned, not "unknown".
+        // CI runs this against every database Flarum supports; a MariaDB server can sit behind the mysql driver.
+        $driver = $this->database()->getDriverName();
+        $expected = [
+            'mysql' => ['MySQL', 'MariaDB'],
+            'mariadb' => ['MariaDB'],
+            'pgsql' => ['PostgreSQL'],
+            'sqlite' => ['SQLite'],
+        ][$driver];
+
         $this->assertSame('pass', $check['status']);
-        $this->assertContains($check['meta']['server'], ['MySQL', 'MariaDB']);
+        $this->assertContains($check['meta']['server'], $expected, "driver: $driver");
         $this->assertMatchesRegularExpression('/^\d+\.\d+/', $check['meta']['version']);
     }
 }
