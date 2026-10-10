@@ -12,7 +12,7 @@ import type { ExtensionCompat } from '../models/Report';
  * plain, as it would link to the page you're already on.
  */
 export function extensionTitle(ext: ExtensionCompat): Mithril.Children {
-  if (ext.reason === 'self') {
+  if (ext.id === 'fof-upgrade-advisor') {
     return <span className="UpgradeAdvisorPage-extension-title">{ext.title}</span>;
   }
 

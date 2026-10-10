@@ -7,10 +7,10 @@ export type ExtStatus = 'compatible' | 'incompatible' | 'unknown' | 'superseded'
 /**
  * Mirrors FoF\UpgradeAdvisor\ExtensionAction.
  */
-export type ExtAction = 'none' | 'remove' | 'swap_after_upgrade' | 'switch_replacement' | 'no_path' | 'unknown' | 'remove_last';
+export type ExtAction = 'none' | 'remove' | 'swap_after_upgrade' | 'switch_replacement' | 'no_path' | 'unknown';
 
 export const BLOCKING_ACTIONS: ExtAction[] = ['remove', 'swap_after_upgrade', 'switch_replacement', 'no_path'];
-export const READY_ACTIONS: ExtAction[] = ['none', 'remove_last'];
+export const READY_ACTIONS: ExtAction[] = ['none'];
 
 export interface ContactAuthor {
   name: string | null;
@@ -31,7 +31,7 @@ export interface ExtensionCompat {
   title: string;
   installedVersion: string | null;
   status: ExtStatus;
-  reason: 'into_core' | 'replaced' | 'self' | null;
+  reason: 'into_core' | 'replaced' | null;
   replacement: string | null;
   replacementCompatible: boolean | null;
   compatibleVersion: string | null;

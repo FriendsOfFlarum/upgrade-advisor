@@ -45,13 +45,9 @@ class SupersededExtensionsTest extends TestCase
     }
 
     /** @test */
-    public function flags_the_advisor_itself_with_the_self_reason()
+    public function does_not_flag_the_advisor_itself_which_has_a_2_0_release()
     {
-        $result = SupersededExtensions::lookup('fof/upgrade-advisor');
-
-        $this->assertNotNull($result);
-        $this->assertSame(SupersededExtensions::SELF, $result['reason']);
-        $this->assertNull($result['replacement']);
+        $this->assertNull(SupersededExtensions::lookup('fof/upgrade-advisor'));
     }
 
     /** @test */

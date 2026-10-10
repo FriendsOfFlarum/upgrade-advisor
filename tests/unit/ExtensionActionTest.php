@@ -47,7 +47,6 @@ class ExtensionActionTest extends TestCase
             'compatible' => [['status' => 'compatible'], ExtensionAction::NONE],
             'built into core' => [['status' => 'superseded', 'reason' => 'into_core'], ExtensionAction::REMOVE],
             'replaced by another package' => [['status' => 'superseded', 'reason' => 'replaced', 'replacement' => 'flarum/realtime'], ExtensionAction::SWAP_AFTER_UPGRADE],
-            'the advisor itself' => [['status' => 'superseded', 'reason' => 'self'], ExtensionAction::REMOVE_LAST],
             'abandoned, replacement ready' => [['status' => 'abandoned', 'replacement' => 'blazite/flarum-turnstile', 'replacementCompatible' => true], ExtensionAction::SWITCH_REPLACEMENT],
             'abandoned, replacement readiness unknown' => [['status' => 'abandoned', 'replacement' => 'acme/foo', 'replacementCompatible' => null], ExtensionAction::SWITCH_REPLACEMENT],
             'abandoned, replacement not ready' => [['status' => 'abandoned', 'replacement' => 'acme/foo', 'replacementCompatible' => false], ExtensionAction::NO_PATH],
@@ -75,7 +74,6 @@ class ExtensionActionTest extends TestCase
     public function ready_means_nothing_to_do_before_upgrading()
     {
         $this->assertTrue(ExtensionAction::isReady(ExtensionAction::NONE));
-        $this->assertTrue(ExtensionAction::isReady(ExtensionAction::REMOVE_LAST));
         $this->assertFalse(ExtensionAction::isReady(ExtensionAction::UNKNOWN));
         $this->assertFalse(ExtensionAction::isReady(ExtensionAction::REMOVE));
     }
@@ -96,7 +94,6 @@ class ExtensionActionTest extends TestCase
             'compatible per discuss tag only' => [['status' => 'compatible', 'compatibleVersion' => null], 'none_unversioned', []],
             'built into core' => [['status' => 'superseded', 'reason' => 'into_core'], 'remove', []],
             'replaced' => [['status' => 'superseded', 'reason' => 'replaced', 'replacement' => 'flarum/realtime'], 'swap_after_upgrade', ['replacement' => 'flarum/realtime']],
-            'the advisor itself' => [['status' => 'superseded', 'reason' => 'self'], 'remove_last', []],
             'abandoned, replacement ready' => [['status' => 'abandoned', 'replacement' => 'acme/new', 'replacementCompatible' => true], 'switch_replacement', ['replacement' => 'acme/new']],
             'abandoned, replacement unverified' => [['status' => 'abandoned', 'replacement' => 'acme/new', 'replacementCompatible' => null], 'switch_replacement_unverified', ['replacement' => 'acme/new']],
             'abandoned, replacement not ready' => [['status' => 'abandoned', 'replacement' => 'acme/new', 'replacementCompatible' => false], 'no_path_replacement_not_ready', ['replacement' => 'acme/new']],
@@ -129,7 +126,6 @@ class ExtensionActionTest extends TestCase
             ExtensionAction::SWAP_AFTER_UPGRADE => 'to_do',
             ExtensionAction::SWITCH_REPLACEMENT => 'to_do',
             ExtensionAction::NONE => 'ready',
-            ExtensionAction::REMOVE_LAST => 'ready',
         ], array_combine(ExtensionAction::ALL, array_map([ExtensionAction::class, 'readiness'], ExtensionAction::ALL)));
     }
 }

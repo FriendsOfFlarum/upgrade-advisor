@@ -38,19 +38,9 @@ class SupersededExtensions
     public const REPLACED = 'replaced';
 
     /**
-     * Reason: the Upgrade Advisor itself. It only supports the current major
-     * version, so it should be removed once the upgrade is complete — there is
-     * intentionally no next-major release of it.
-     */
-    public const SELF = 'self';
-
-    /**
      * Map of composer package name => [reason, replacement?].
      */
     protected const MAP = [
-        'fof/upgrade-advisor' => [
-            'reason' => self::SELF,
-        ],
         'fof/nightmode' => [
             'reason' => self::INTO_CORE,
         ],

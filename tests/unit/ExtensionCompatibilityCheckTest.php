@@ -108,7 +108,7 @@ class ExtensionCompatibilityCheckTest extends TestCase
         $result = $this->check([
             'acme/ready' => ['status' => 'compatible', 'compatible_version' => '2.0.0'],
             'fof/nightmode' => ['status' => 'unknown'], // curated: built into core
-            'fof/upgrade-advisor' => ['status' => 'unknown'], // curated: the advisor itself
+            'fof/upgrade-advisor' => ['status' => 'compatible', 'compatible_version' => '2.0.0'], // checked like any other
             'acme/stuck' => ['status' => 'incompatible', 'latest_version' => '1.2.0'],
             'acme/private' => ['status' => 'unknown'],
         ])->run();
@@ -118,7 +118,7 @@ class ExtensionCompatibilityCheckTest extends TestCase
         $this->assertSame([
             'acme/ready' => ExtensionAction::NONE,
             'fof/nightmode' => ExtensionAction::REMOVE,
-            'fof/upgrade-advisor' => ExtensionAction::REMOVE_LAST,
+            'fof/upgrade-advisor' => ExtensionAction::NONE,
             'acme/stuck' => ExtensionAction::NO_PATH,
             'acme/private' => ExtensionAction::UNKNOWN,
         ], $actions);

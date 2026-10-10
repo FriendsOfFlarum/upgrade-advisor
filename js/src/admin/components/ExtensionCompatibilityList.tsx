@@ -26,7 +26,7 @@ const GROUPS: { key: GroupKey; icon: string; actions: ExtAction[] }[] = [
   { key: 'decision', icon: 'fas fa-ban', actions: ['no_path'] },
   { key: 'unknown', icon: 'fas fa-question-circle', actions: ['unknown'] },
   { key: 'replace', icon: 'fas fa-exchange-alt', actions: ['remove', 'swap_after_upgrade', 'switch_replacement'] },
-  { key: 'ready', icon: 'fas fa-check-circle', actions: ['none', 'remove_last'] },
+  { key: 'ready', icon: 'fas fa-check-circle', actions: ['none'] },
 ];
 
 const COLUMNS = 5;
@@ -43,7 +43,6 @@ export default class ExtensionCompatibilityList extends Component<Attrs> {
   view() {
     // Warnings show on the header chips; only a failing check blocks the upgrade.
     const failing = this.attrs.checks.filter((check) => check.status === 'fail');
-    const self = this.attrs.extensions.find((ext) => ext.action === 'remove_last');
 
     return (
       <div className="UpgradeAdvisorList">
@@ -70,10 +69,6 @@ export default class ExtensionCompatibilityList extends Component<Attrs> {
             );
           })}
         </table>
-
-        {self && (
-          <p className="UpgradeAdvisorList-final">{app.translator.trans('fof-upgrade-advisor.admin.list.final_step', { title: self.title })}</p>
-        )}
       </div>
     );
   }
@@ -164,8 +159,6 @@ export default class ExtensionCompatibilityList extends Component<Attrs> {
           return ext.replacement ? key('replacement_not_ready', replacement) : key('abandoned');
         }
         return ext.latestVersion ? key('latest', { version: ext.latestVersion }) : key('no_release');
-      case 'remove_last':
-        return key('remove_last');
       default:
         return key('unknown');
     }
