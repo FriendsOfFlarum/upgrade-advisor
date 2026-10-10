@@ -32,14 +32,8 @@ class RepositoryConfig
 
     protected const SETTING = 'fof-upgrade-advisor.repositories';
 
-    /**
-     * @var SettingsRepositoryInterface
-     */
-    protected $settings;
-
-    public function __construct(SettingsRepositoryInterface $settings)
+    public function __construct(protected SettingsRepositoryInterface $settings)
     {
-        $this->settings = $settings;
     }
 
     /**

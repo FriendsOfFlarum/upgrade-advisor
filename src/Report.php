@@ -23,44 +23,10 @@ use FoF\UpgradeAdvisor\Check\CheckResult;
 class Report
 {
     /**
-     * @var array<int, array{id: string, category: string, result: CheckResult}>
-     */
-    public $checks;
-
-    /**
-     * @var string
-     */
-    public $overall;
-
-    /**
-     * @var string
-     */
-    public $flarumMajor;
-
-    /**
-     * Unix timestamp the checks ran at.
-     *
-     * @var int
-     */
-    public $checkedAt;
-
-    /**
-     * Unix timestamp that cached remote lookups are at least as fresh as.
-     *
-     * @var int
-     */
-    public $dataAsOf;
-
-    /**
      * @param array<int, array{id: string, category: string, result: CheckResult}> $checks
      */
-    public function __construct(array $checks, string $overall, string $flarumMajor, int $checkedAt, int $dataAsOf)
+    public function __construct(public array $checks, public string $overall, public string $flarumMajor, public int $checkedAt, public int $dataAsOf)
     {
-        $this->checks = $checks;
-        $this->overall = $overall;
-        $this->flarumMajor = $flarumMajor;
-        $this->checkedAt = $checkedAt;
-        $this->dataAsOf = $dataAsOf;
     }
 
     public static function build(CheckRegistry $registry, CacheGeneration $generation, int $now): self

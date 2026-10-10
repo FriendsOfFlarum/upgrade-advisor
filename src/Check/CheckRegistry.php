@@ -18,14 +18,8 @@ use Illuminate\Contracts\Container\Container;
  */
 class CheckRegistry
 {
-    /**
-     * @var Container
-     */
-    protected $container;
-
-    public function __construct(Container $container)
+    public function __construct(protected Container $container)
     {
-        $this->container = $container;
     }
 
     /**

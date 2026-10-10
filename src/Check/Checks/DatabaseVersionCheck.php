@@ -18,14 +18,8 @@ use Illuminate\Database\ConnectionInterface;
 
 class DatabaseVersionCheck implements Check
 {
-    /**
-     * @var ConnectionInterface
-     */
-    protected $db;
-
-    public function __construct(ConnectionInterface $db)
+    public function __construct(protected ConnectionInterface $db)
     {
-        $this->db = $db;
     }
 
     public function id(): string

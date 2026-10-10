@@ -32,38 +32,8 @@ use Psr\Http\Server\RequestHandlerInterface;
  */
 class ExportReportCsvController implements RequestHandlerInterface
 {
-    /**
-     * @var CheckRegistry
-     */
-    protected $registry;
-
-    /**
-     * @var CacheGeneration
-     */
-    protected $generation;
-
-    /**
-     * @var CsvReport
-     */
-    protected $csv;
-
-    /**
-     * @var SettingsRepositoryInterface
-     */
-    protected $settings;
-
-    /**
-     * @var UrlGenerator
-     */
-    protected $url;
-
-    public function __construct(CheckRegistry $registry, CacheGeneration $generation, CsvReport $csv, SettingsRepositoryInterface $settings, UrlGenerator $url)
+    public function __construct(protected CheckRegistry $registry, protected CacheGeneration $generation, protected CsvReport $csv, protected SettingsRepositoryInterface $settings, protected UrlGenerator $url)
     {
-        $this->registry = $registry;
-        $this->generation = $generation;
-        $this->csv = $csv;
-        $this->settings = $settings;
-        $this->url = $url;
     }
 
     public function handle(ServerRequestInterface $request): ResponseInterface

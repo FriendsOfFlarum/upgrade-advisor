@@ -78,19 +78,10 @@ class SupersededExtensions
     ];
 
     /**
-     * Entries contributed by the {@see \FoF\UpgradeAdvisor\Extend\Superseded}
-     * extender, merged over the curated map above.
-     *
-     * @var array<string, array{reason: string, replacement?: string|null}>
-     */
-    protected $additional = [];
-
-    /**
      * @param array<string, array{reason: string, replacement?: string|null}> $additional
      */
-    public function __construct(array $additional = [])
+    public function __construct(protected array $additional = [])
     {
-        $this->additional = $additional;
     }
 
     /**

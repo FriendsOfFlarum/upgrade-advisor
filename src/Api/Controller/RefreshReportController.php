@@ -25,16 +25,9 @@ use Tobscure\JsonApi\Document;
  */
 class RefreshReportController extends ShowReportController
 {
-    /**
-     * @var AbandonedExtensions
-     */
-    protected $abandoned;
-
-    public function __construct(CheckRegistry $registry, CacheGeneration $generation, AbandonedExtensions $abandoned)
+    public function __construct(CheckRegistry $registry, CacheGeneration $generation, protected AbandonedExtensions $abandoned)
     {
         parent::__construct($registry, $generation);
-
-        $this->abandoned = $abandoned;
     }
 
     /**

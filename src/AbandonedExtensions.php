@@ -31,48 +31,12 @@ class AbandonedExtensions
     protected const SOURCE_URL = 'https://raw.githubusercontent.com/flarum/abandoned-extensions/main/abandoned.json';
 
     /**
-     * @var Container
-     */
-    protected $container;
-
-    /**
-     * @var SettingsRepositoryInterface
-     */
-    protected $settings;
-
-    /**
-     * @var Client
-     */
-    protected $client;
-
-    /**
-     * @var Cache
-     */
-    protected $cache;
-
-    /**
-     * @var LoggerInterface
-     */
-    protected $log;
-
-    /**
-     * @var CacheGeneration
-     */
-    protected $generation;
-
-    /**
      * @var array<string, mixed>|null
      */
     protected $map;
 
-    public function __construct(Container $container, SettingsRepositoryInterface $settings, Client $client, Cache $cache, LoggerInterface $log, CacheGeneration $generation)
+    public function __construct(protected Container $container, protected SettingsRepositoryInterface $settings, protected Client $client, protected Cache $cache, protected LoggerInterface $log, protected CacheGeneration $generation)
     {
-        $this->container = $container;
-        $this->settings = $settings;
-        $this->client = $client;
-        $this->cache = $cache;
-        $this->log = $log;
-        $this->generation = $generation;
     }
 
     /**

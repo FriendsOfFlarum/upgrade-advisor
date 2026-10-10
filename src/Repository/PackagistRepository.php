@@ -35,26 +35,6 @@ class PackagistRepository
     protected const CACHE_TTL = CacheGeneration::TTL;
 
     /**
-     * @var Client
-     */
-    protected $client;
-
-    /**
-     * @var Cache
-     */
-    protected $cache;
-
-    /**
-     * @var CacheGeneration
-     */
-    protected $generation;
-
-    /**
-     * @var LoggerInterface
-     */
-    protected $log;
-
-    /**
      * Versions fetched during this request, by package; null marks a failure,
      * so it isn't retried one at a time after a prefetch.
      *
@@ -62,12 +42,8 @@ class PackagistRepository
      */
     protected $fetched = [];
 
-    public function __construct(Client $client, Cache $cache, LoggerInterface $log, CacheGeneration $generation)
+    public function __construct(protected Client $client, protected Cache $cache, protected LoggerInterface $log, protected CacheGeneration $generation)
     {
-        $this->generation = $generation;
-        $this->client = $client;
-        $this->cache = $cache;
-        $this->log = $log;
     }
 
     /**

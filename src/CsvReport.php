@@ -59,14 +59,8 @@ class CsvReport
         CheckResult::FAIL => 'fix',
     ];
 
-    /**
-     * @var TranslatorInterface
-     */
-    protected $translator;
-
-    public function __construct(TranslatorInterface $translator)
+    public function __construct(protected TranslatorInterface $translator)
     {
-        $this->translator = $translator;
     }
 
     public static function filename(string $forumTitle, int $now): string

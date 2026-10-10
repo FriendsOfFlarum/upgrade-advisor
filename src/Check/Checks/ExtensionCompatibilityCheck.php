@@ -36,59 +36,23 @@ class ExtensionCompatibilityCheck implements Check
     protected const TARGET_CORE_VERSION = '2.0.0';
 
     /**
-     * @var ExtensionManager
-     */
-    protected $extensions;
-
-    /**
-     * @var PackagistRepository
-     */
-    protected $packagist;
-
-    /**
-     * @var DiscussRepository
-     */
-    protected $discuss;
-
-    /**
-     * @var RepositoryConfig
-     */
-    protected $repositories;
-
-    /**
-     * @var ComposerRepository
-     */
-    protected $composer;
-
-    /**
      * @var SupersededExtensions
      */
     protected $superseded;
 
-    /**
-     * @var AbandonedExtensions|null
-     */
-    protected $abandoned;
-
     public function __construct(
-        ExtensionManager $extensions,
-        PackagistRepository $packagist,
-        DiscussRepository $discuss,
-        RepositoryConfig $repositories,
-        ComposerRepository $composer,
+        protected ExtensionManager $extensions,
+        protected PackagistRepository $packagist,
+        protected DiscussRepository $discuss,
+        protected RepositoryConfig $repositories,
+        protected ComposerRepository $composer,
         ?SupersededExtensions $superseded = null,
-        ?AbandonedExtensions $abandoned = null
+        protected ?AbandonedExtensions $abandoned = null
     ) {
-        $this->extensions = $extensions;
-        $this->packagist = $packagist;
-        $this->discuss = $discuss;
-        $this->repositories = $repositories;
-        $this->composer = $composer;
         // Optional so existing callers constructing this directly keep working;
         // the container always supplies the bound instance carrying any
         // extender-registered mappings.
         $this->superseded = $superseded ?? new SupersededExtensions();
-        $this->abandoned = $abandoned;
     }
 
     public function id(): string
