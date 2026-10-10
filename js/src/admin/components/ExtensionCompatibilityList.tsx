@@ -3,7 +3,7 @@ import Component, { ComponentAttrs } from 'flarum/common/Component';
 import Button from 'flarum/common/components/Button';
 import LinkButton from 'flarum/common/components/LinkButton';
 import Tooltip from 'flarum/common/components/Tooltip';
-import icon from 'flarum/common/helpers/icon';
+import Icon from 'flarum/common/components/Icon';
 import type Mithril from 'mithril';
 
 import type { CheckData, ExtAction, ExtensionCompat } from '../models/Report';
@@ -86,8 +86,8 @@ export default class ExtensionCompatibilityList extends Component<Attrs> {
         <tr className="UpgradeAdvisorList-groupHeader">
           <th colSpan={COLUMNS} scope="rowgroup">
             <button type="button" className="UpgradeAdvisorList-toggle" aria-expanded={!collapsed} onclick={() => (this.collapsed[key] = !collapsed)}>
-              {icon(collapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-down', { className: 'UpgradeAdvisorList-chevron' })}
-              {icon(iconName, { className: 'UpgradeAdvisorList-groupIcon' })}
+              <Icon name={collapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-down'} className="UpgradeAdvisorList-chevron" />
+              <Icon name={iconName} className="UpgradeAdvisorList-groupIcon" />
               <span className="UpgradeAdvisorList-groupTitle">{app.translator.trans(`fof-upgrade-advisor.admin.list.groups.${key}.title`)}</span>
               <span className="UpgradeAdvisorList-count">{count}</span>
               <span className="UpgradeAdvisorList-groupDescription">
@@ -151,14 +151,17 @@ export default class ExtensionCompatibilityList extends Component<Attrs> {
 
     switch (ext.action) {
       case 'none':
-        return ext.compatibleVersion ? [icon('fas fa-check'), ' ', key('none', { version: ext.compatibleVersion })] : key('none_unversioned');
+        return ext.compatibleVersion ? [<Icon name="fas fa-check" />, ' ', key('none', { version: ext.compatibleVersion })] : key('none_unversioned');
       case 'remove':
         return key('remove');
       case 'swap_after_upgrade':
       case 'switch_replacement':
         return ext.replacementCompatible === null && ext.action === 'switch_replacement'
           ? key('replacement_unverified', replacement)
-          : [key('replacement', replacement), ext.replacementCompatible ? [' ', icon('fas fa-check', { className: 'UpgradeAdvisorList-ok' })] : null];
+          : [
+              key('replacement', replacement),
+              ext.replacementCompatible ? [' ', <Icon name="fas fa-check" className="UpgradeAdvisorList-ok" />] : null,
+            ];
       case 'no_path':
         if (ext.status === 'abandoned') {
           return ext.replacement ? key('replacement_not_ready', replacement) : key('abandoned');
