@@ -19,14 +19,18 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Looks up a package's compatibility against an admin-configured Composer
- * repository (Floxum or a private Packagist / custom composer repo).
+ * repository (Floxum, private Packagist, Satis, or custom composer repo).
  *
- * Two metadata shapes are supported:
+ * Supported transport schemes:
+ *   - HTTP / HTTPS (remote Packagist, Floxum, remote custom/Satis repo).
+ *   - file:// (local filesystem repository, e.g. file:///path/to/satis/public).
+ *
+ * Supported metadata shapes:
  *   - Inline: packages.json contains all package versions under "packages"
- *     (Floxum works this way).
+ *     (Floxum and inline custom/Satis repos work this way).
  *   - Lazy (metadata-url): packages.json declares a "metadata-url" template and
- *     per-package version data is fetched from it (private Packagist, like the
- *     public one).
+ *     per-package version data is fetched from it (private Packagist, Satis with p2).
+ *   - Includes: packages.json references version dumps via "includes" (Composer 1 custom/Satis repos).
  */
 class ComposerRepository
 {
@@ -84,6 +88,23 @@ class ComposerRepository
     {
         $url = $repo['url'].'packages.json';
 
+        if ($this->isLocal($url)) {
+            $path = $this->localPath($url);
+            $baseDir = $this->localPath($repo['url']);
+
+            if (! is_file($path) || ! is_readable($path)) {
+                return ['ok' => false, 'reason' => 'unreachable'];
+            }
+
+            $head = $this->readLocalHead($path, 262144, $baseDir);
+
+            if ($head === null || ! $this->looksLikeJsonObject($head)) {
+                return ['ok' => false, 'reason' => 'invalid'];
+            }
+
+            return ['ok' => true, 'reason' => 'ok'];
+        }
+
         try {
             $response = $this->client->get($url, [
                 'timeout' => 15,
@@ -137,7 +158,9 @@ class ComposerRepository
 
     protected function looksLikeJsonObject(string $head): bool
     {
-        return strncmp(ltrim($head), '{', 1) === 0;
+        $head = preg_replace('/^\xEF\xBB\xBF/', '', ltrim($head)) ?? '';
+
+        return strncmp($head, '{', 1) === 0;
     }
 
     /**
@@ -223,7 +246,23 @@ class ComposerRepository
             return array_values($root['packages'][$packageName]);
         }
 
-        return $versions ?? (isset($root['packages']) ? [] : null);
+        // Support Composer v1 / Satis "includes" layout (e.g. "includes": {"include/all$...json": ...})
+        if (isset($root['includes']) && is_array($root['includes'])) {
+            foreach (array_keys($root['includes']) as $includePath) {
+                if (! is_string($includePath)) {
+                    continue;
+                }
+
+                $includeUrl = $this->absoluteUrl($repo['url'], $includePath);
+                $included = $this->fetchJsonCapped($repo, $includeUrl, 'inc.'.md5($includeUrl));
+
+                if (isset($included['packages'][$packageName]) && is_array($included['packages'][$packageName])) {
+                    return array_values($included['packages'][$packageName]);
+                }
+            }
+        }
+
+        return $versions ?? (isset($root['packages']) || isset($root['includes']) ? [] : null);
     }
 
     /**
@@ -251,7 +290,8 @@ class ComposerRepository
         $metadataUrl = 'p2/%package%.json'; // convention, relative to the repo url
 
         if ($head !== null && preg_match('#"metadata-url"\s*:\s*"([^"]+)"#', $head, $matches) === 1) {
-            $metadataUrl = $matches[1];
+            $decoded = json_decode('"'.$matches[1].'"');
+            $metadataUrl = is_string($decoded) ? $decoded : stripslashes($matches[1]);
         }
 
         $this->cache->put($cacheKey, $metadataUrl, self::CACHE_TTL);
@@ -375,6 +415,12 @@ class ComposerRepository
      */
     protected function fetchHead(array $repo, string $url, int $maxBytes): ?string
     {
+        if ($this->isLocal($url)) {
+            $baseDir = $this->localPath($repo['url']);
+
+            return $this->readLocalHead($this->localPath($url), $maxBytes, $baseDir);
+        }
+
         try {
             $response = $this->client->get($url, [
                 'timeout' => 15,
@@ -405,6 +451,81 @@ class ComposerRepository
     }
 
     /**
+     * Read at most $maxBytes from a local file on disk, enforcing directory jail and .json extension.
+     */
+    protected function readLocalHead(string $path, int $maxBytes, ?string $baseDir = null): ?string
+    {
+        // Enforce that local file reads are restricted strictly to .json documents
+        // to prevent arbitrary file reading of sensitive system files or scripts.
+        if (substr($path, -5) !== '.json') {
+            $this->log->warning('[fof/upgrade-advisor] Refusing to read non-JSON local file: '.$path);
+
+            return null;
+        }
+
+        // Reject null bytes
+        if (strpos($path, "\0") !== false) {
+            return null;
+        }
+
+        // Verify file exists and is readable
+        if (! is_file($path) || ! is_readable($path)) {
+            $this->log->info('[fof/upgrade-advisor] Local Composer repo file missing or unreadable: '.$path);
+
+            return null;
+        }
+
+        // Directory Jail: prevent path traversal (../) escaping the repository directory
+        if ($baseDir !== null) {
+            $realBase = realpath($baseDir);
+            $realPath = realpath($path);
+
+            if ($realBase === false || $realPath === false) {
+                return null;
+            }
+
+            $realBasePrefix = rtrim($realBase, '\\/').DIRECTORY_SEPARATOR;
+
+            if (strncmp($realPath, $realBasePrefix, strlen($realBasePrefix)) !== 0 && $realPath !== $realBase) {
+                $this->log->warning('[fof/upgrade-advisor] Path traversal attempt detected outside repo base: '.$path);
+
+                return null;
+            }
+
+            // Use the canonical path that was verified by the directory jail
+            $path = $realPath;
+        }
+
+        try {
+            $handle = @fopen($path, 'rb');
+
+            if ($handle === false) {
+                return null;
+            }
+
+            $buffer = '';
+
+            while (! feof($handle) && strlen($buffer) < $maxBytes) {
+                $chunk = fread($handle, 8192);
+
+                if ($chunk === false) {
+                    break;
+                }
+
+                $buffer .= $chunk;
+            }
+
+            fclose($handle);
+
+            return $buffer;
+        } catch (\Throwable $e) {
+            $this->log->info('[fof/upgrade-advisor] Failed to read local Composer repo file '.$path.': '.$e->getMessage());
+
+            return null;
+        }
+    }
+
+    /**
      * @param array{type: string, url: string, username: ?string, token: ?string} $repo
      *
      * @return array<string, string>
@@ -429,8 +550,30 @@ class ComposerRepository
     protected function absoluteUrl(string $base, string $candidate): string
     {
         // Already absolute.
-        if (preg_match('#^https?://#i', $candidate) === 1) {
+        if (preg_match('#^(https?|file)://#i', $candidate) === 1) {
             return $candidate;
+        }
+
+        // When base is a local repository (file:// or filesystem path)
+        if ($this->isLocal($base)) {
+            $baseDir = str_replace('\\', '/', $this->localPath($base));
+            $cleanBaseDir = rtrim($baseDir, '/');
+
+            $cand = str_replace('\\', '/', $candidate);
+
+            // If candidate is already an absolute filesystem path within or equal to the repo base directory
+            // (e.g. base: file:///var/www/satis/public/, candidate: /var/www/satis/public/p2/%package%.json)
+            if (strncmp($cand, $cleanBaseDir.'/', strlen($cleanBaseDir) + 1) === 0 || $cand === $cleanBaseDir) {
+                return 'file://'.(strncmp($cand, '/', 1) === 0 ? '' : '/').$cand;
+            }
+
+            // Root-relative (e.g. /p2/%package%.json): resolve relative to repo base directory
+            if (strncmp($cand, '/', 1) === 0) {
+                return 'file://'.(strncmp($cleanBaseDir, '/', 1) === 0 ? '' : '/').$cleanBaseDir.$cand;
+            }
+
+            // Path-relative (e.g. p2/%package%.json)
+            return 'file://'.(strncmp($cleanBaseDir, '/', 1) === 0 ? '' : '/').$cleanBaseDir.'/'.ltrim($cand, '/');
         }
 
         // Root-relative (e.g. "/glowingblue/p2/%package%.json"): resolve against
@@ -446,6 +589,33 @@ class ComposerRepository
 
         // Path-relative.
         return rtrim($base, '/').'/'.ltrim($candidate, '/');
+    }
+
+    protected function isLocal(string $url): bool
+    {
+        return strncmp($url, 'file://', 7) === 0
+            || strncmp($url, '/', 1) === 0
+            || (bool) preg_match('#^[a-zA-Z]:[\\\\/]#', $url);
+    }
+
+    protected function localPath(string $url): string
+    {
+        // Strip query string and fragment if present
+        $cleanUrl = explode('?', $url, 2)[0];
+        $cleanUrl = explode('#', $cleanUrl, 2)[0];
+
+        if (strncmp($cleanUrl, 'file://', 7) === 0) {
+            $path = rawurldecode((string) preg_replace('#^file://(localhost)?#i', '', $cleanUrl));
+
+            // On Windows: file:///C:/path -> /C:/path -> C:/path
+            if (preg_match('#^/[a-zA-Z]:/#', $path)) {
+                $path = ltrim($path, '/');
+            }
+
+            return $path;
+        }
+
+        return $cleanUrl;
     }
 
     protected function constraintAllows(string $constraint, string $coreVersion): bool

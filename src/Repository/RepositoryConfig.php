@@ -22,6 +22,7 @@ use Flarum\Settings\SettingsRepositoryInterface;
  *
  *   { "type": "floxum",  "token": "..." }
  *   { "type": "composer", "url": "https://repo.packagist.com/acme/", "username": "token", "token": "..." }
+ *   { "type": "composer", "url": "file:///path/to/satis/public/", "username": null, "token": null }
  */
 class RepositoryConfig
 {
@@ -111,8 +112,36 @@ class RepositoryConfig
                 return null;
             }
 
+            // Reject UNC paths (e.g. \\attacker.com\share or //attacker.com/share)
+            // to prevent NTLM credential-leaking attacks on Windows.
+            if (strncmp($url, '\\\\', 2) === 0 || strncmp($url, '//', 2) === 0) {
+                return null;
+            }
+
+            // Normalise local paths to file:// schema so URL handling is uniform.
+            if (strncmp($url, '/', 1) === 0) {
+                $url = 'file://'.$url;
+            } elseif (preg_match('#^[a-zA-Z]:[\\\\/]#', $url)) {
+                $url = 'file:///'.str_replace('\\', '/', $url);
+            }
+
+            // Enforce scheme whitelist: only http, https, and file are permitted.
+            // Blocks stream wrappers (php://, phar://, data://, glob://) and arbitrary protocols (gopher://, ftp://).
+            if (! preg_match('#^(https?|file)://#i', $url)) {
+                return null;
+            }
+
+            // For file:// URLs, reject remote hosts (only empty host or localhost is permitted).
+            if (strncmp($url, 'file://', 7) === 0) {
+                $host = parse_url($url, PHP_URL_HOST);
+
+                if ($host !== null && $host !== '' && strtolower($host) !== 'localhost') {
+                    return null;
+                }
+            }
+
             // Ensure a trailing slash so packages.json resolves consistently.
-            $url = rtrim($url, '/').'/';
+            $url = rtrim($url, '/\\').'/';
 
             $username = isset($entry['username']) ? trim((string) $entry['username']) : null;
 
