@@ -26,9 +26,9 @@ Compatibility is determined from **Packagist** and cross-referenced against the 
 Extensions installed from private sources aren't on public Packagist, so the advisor can't check them by default. Under the **Repositories** tab you can add:
 
 - **Floxum** — just paste your access token.
-- **Private Packagist / custom Composer repositories** — provide the repository URL, username, and token.
+- **Private Packagist / custom Composer repositories** — provide the repository URL (HTTP/HTTPS or local `file://` / filesystem path), username, and token.
 
-Each repository has a **Test connection** button to verify the credentials before saving. Configured repositories are only queried for extensions that public Packagist can't resolve.
+Each repository has a **Test connection** button to verify the credentials or local path before saving. Configured repositories are only queried for extensions that public Packagist can't resolve.
 
 ## Adding your own checks
 
